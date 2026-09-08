@@ -24,4 +24,8 @@
       { "name": "Sharp Park Beach Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6350, "lng": -122.4900, "location": "Sharp Park, Pacifica (approx.)" },
       { "name": "Thornton Vista Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.5970, "lng": -122.5010, "location": "Thornton, Pacifica (approx.)" },
       { "name": "Linda Mar Habitat Restoration", "date": "2026-09-27", "day": "Sunday", "start": "10:00 AM", "end": "12:00 PM", "lat": 37.5947, "lng": -122.5027, "location": "Crespi Community Center parking lot, Pacifica (approx.)" },
-      { "name": "Rockaway Beach Cleanup", "date": "2026-10-03",
+      { "name": "Rockaway Beach Cleanup", "date": "2026-10-03", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6118, "lng": -122.4989, "location": "Rockaway Beach, Pacifica (approx.)" },
+      { "name": "San Pedro Creek Cleanup", "date": "2026-10-03", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6280, "lng": -122.4930, "location": "San Pedro, Pacifica (approx.)" }
+    ]
+  }
+]
