@@ -1,0 +1,31 @@
+[
+  {
+    "org": "Surfrider Foundation (SF Chapter)",
+    "color": "#4a7856",
+    "events": [
+      { "name": "Chapter Meeting - Outer Sunset", "date": "2026-09-02", "day": "Wednesday", "start": "6:30 PM", "end": "8:00 PM", "lat": 37.7599, "lng": -122.5090, "location": "Outer Sunset, SF" },
+      { "name": "Ocean Beach Cleanup - Judah", "date": "2026-09-06", "day": "Sunday", "start": "10:00 AM", "end": "12:00 PM", "lat": 37.7605, "lng": -122.5100, "location": "Ocean Beach @ Judah, SF" },
+      { "name": "Coastal Cleanup Day - Ocean Beach & Judah", "date": "2026-09-19", "day": "Saturday", "start": "10:00 AM", "end": "12:00 PM", "lat": 37.7595, "lng": -122.5105, "location": "Ocean Beach & Judah, SF" },
+      { "name": "Ocean Beach Cleanup - Judah", "date": "2026-10-04", "day": "Sunday", "start": "10:00 AM", "end": "12:00 PM", "lat": 37.7605, "lng": -122.5100, "location": "Ocean Beach @ Judah, SF" },
+      { "name": "Ocean Beach Cleanup - Stairwell 17", "date": "2026-12-06", "day": "Sunday", "start": "10:00 AM", "end": "12:00 PM", "lat": 37.7690, "lng": -122.5107, "location": "Ocean Beach, Stairwell 17, SF" }
+    ]
+  },
+  {
+    "org": "Pacific Beach Coalition",
+    "color": "#d9642b",
+    "events": [
+      { "name": "Linda Mar Cleanup", "date": "2026-07-26", "day": "Sunday", "start": "10:00 AM", "end": null, "lat": 37.5947, "lng": -122.5027, "location": "Linda Mar, Pacifica (approx.)" },
+      { "name": "Rockaway Cleanup", "date": "2026-08-01", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6118, "lng": -122.4989, "location": "Rockaway Beach, Pacifica (approx.)" },
+      { "name": "San Pedro Cleanup", "date": "2026-08-01", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6280, "lng": -122.4930, "location": "San Pedro, Pacifica (approx.)" },
+      { "name": "Montara Beach Cleanup", "date": "2026-08-08", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.5410, "lng": -122.5140, "location": "Montara Beach (approx.)" },
+      { "name": "Sharp Park Cleanup", "date": "2026-08-08", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6350, "lng": -122.4900, "location": "Sharp Park, Pacifica (approx.)" },
+      { "name": "Thornton Cleanup", "date": "2026-08-09", "day": "Sunday", "start": "9:00 AM", "end": null, "lat": 37.5970, "lng": -122.5010, "location": "Thornton, Pacifica (approx.)" },
+      { "name": "Esplanade Cleanup", "date": "2026-08-15", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6300, "lng": -122.4920, "location": "Esplanade, Pacifica (approx.)" },
+      { "name": "Pacifica State Beach Cleanup", "date": "2026-08-15", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.5947, "lng": -122.5027, "location": "Pacifica State Beach (approx.)" },
+      { "name": "Foster City Cleanup", "date": "2026-08-16", "day": "Sunday", "start": "9:00 AM", "end": null, "lat": 37.5585, "lng": -122.2711, "location": "Foster City" },
+      { "name": "Mussel Rock Cleanup", "date": "2026-08-22", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6660, "lng": -122.4970, "location": "Mussel Rock (approx.)" },
+      { "name": "Linda Mar Cleanup", "date": "2026-08-23", "day": "Sunday", "start": "10:00 AM", "end": null, "lat": 37.5947, "lng": -122.5027, "location": "Linda Mar, Pacifica (approx.)" },
+      { "name": "Harbor/Sunset Cleanup", "date": "2026-08-29", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6118, "lng": -122.4989, "location": "Harbor/Sunset, Pacifica (approx.)" }
+    ]
+  }
+]
