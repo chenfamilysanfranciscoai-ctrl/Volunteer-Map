@@ -3,29 +3,71 @@
     "org": "Surfrider Foundation (SF Chapter)",
     "color": "#4a7856",
     "events": [
-      { "name": "Sunset Dunes Bioblitz (with Cal Academy & SF Rec & Park)", "date": "2026-09-12", "day": "Saturday", "start": "10:00 AM", "end": "1:30 PM", "lat": 37.7580, "lng": -122.5095, "location": "Ocean Beach, SF" },
-      { "name": "Coastal Cleanup Day - Ocean Beach & Judah", "date": "2026-09-19", "day": "Saturday", "start": "10:00 AM", "end": "12:00 PM", "lat": 37.7595, "lng": -122.5105, "location": "Ocean Beach & Judah, SF" },
-      { "name": "Ocean Beach Cleanup - Judah", "date": "2026-10-04", "day": "Sunday", "start": "10:00 AM", "end": "12:00 PM", "lat": 37.7605, "lng": -122.5100, "location": "Ocean Beach @ Judah, SF" },
-      { "name": "Ocean Beach Cleanup - Stairwell 17", "date": "2026-12-06", "day": "Sunday", "start": "10:00 AM", "end": "12:00 PM", "lat": 37.7690, "lng": -122.5107, "location": "Ocean Beach, Stairwell 17, SF" }
+      {
+        "name": "Sunset Dunes Bioblitz Hosted By Cal Academy and SF Department of Environment",
+        "date": "2026-09-12",
+        "day": "Saturday",
+        "start": "10:00 AM",
+        "end": "1:30 PM",
+        "lat": 37.7562,
+        "lng": -122.5102,
+        "location": "Ocean Beach, San Francisco, CA",
+        "bookingUrl": "https://qrco.de/OBbioblitz"
+      },
+      {
+        "name": "Coastal Cleanup Day",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "12:00 PM",
+        "lat": 37.7879,
+        "lng": -122.4075,
+        "location": "San Francisco, CA",
+        "bookingUrl": "https://x.gldn.io/e/CzRklB5sA5b"
+      },
+      {
+        "name": "Ocean Beach Cleanup - Surfrider San Francisco",
+        "date": "2026-10-04",
+        "day": "Sunday",
+        "start": "10:00 AM",
+        "end": "12:00 PM",
+        "lat": 37.7562,
+        "lng": -122.5102,
+        "location": "Ocean Beach, San Francisco, CA",
+        "bookingUrl": "https://x.gldn.io/e/9B5JZOXsA5b"
+      },
+      {
+        "name": "Ocean Beach Cleanup - Surfrider San Francisco",
+        "date": "2026-11-01",
+        "day": "Sunday",
+        "start": "10:00 AM",
+        "end": "12:00 PM",
+        "lat": 37.7562,
+        "lng": -122.5102,
+        "location": "Ocean Beach, San Francisco, CA",
+        "bookingUrl": "https://x.gldn.io/e/BggST6TsA5b"
+      }
     ]
   },
   {
     "org": "Pacific Beach Coalition",
     "color": "#d9642b",
-    "events": [
-      { "name": "Calera Creek Habitat Restoration", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6140, "lng": -122.4995, "location": "Calera Creek, Pacifica (approx.)" },
-      { "name": "Esplanade Beach Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6300, "lng": -122.4920, "location": "Esplanade, Pacifica (approx.)" },
-      { "name": "Foster City Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.5585, "lng": -122.2711, "location": "Foster City" },
-      { "name": "Montara Beach Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.5410, "lng": -122.5140, "location": "Montara Beach (approx.)" },
-      { "name": "Mussel Rock Beach Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6660, "lng": -122.4970, "location": "Mussel Rock (approx.)" },
-      { "name": "Pacifica State Beach Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.5947, "lng": -122.5027, "location": "Pacifica State Beach (approx.)" },
-      { "name": "Rockaway Beach Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6118, "lng": -122.4989, "location": "Rockaway Beach, Pacifica (approx.)" },
-      { "name": "San Pedro Creek Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6280, "lng": -122.4930, "location": "San Pedro, Pacifica (approx.)" },
-      { "name": "Sharp Park Beach Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6350, "lng": -122.4900, "location": "Sharp Park, Pacifica (approx.)" },
-      { "name": "Thornton Vista Cleanup", "date": "2026-09-19", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.5970, "lng": -122.5010, "location": "Thornton, Pacifica (approx.)" },
-      { "name": "Linda Mar Habitat Restoration", "date": "2026-09-27", "day": "Sunday", "start": "10:00 AM", "end": "12:00 PM", "lat": 37.5947, "lng": -122.5027, "location": "Crespi Community Center parking lot, Pacifica (approx.)" },
-      { "name": "Rockaway Beach Cleanup", "date": "2026-10-03", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6118, "lng": -122.4989, "location": "Rockaway Beach, Pacifica (approx.)" },
-      { "name": "San Pedro Creek Cleanup", "date": "2026-10-03", "day": "Saturday", "start": "9:00 AM", "end": null, "lat": 37.6280, "lng": -122.4930, "location": "San Pedro, Pacifica (approx.)" }
-    ]
+    "events": []
+  },
+  {
+    "org": "Save The Bay",
+    "color": "#3b6ea5",
+    "events": []
+  },
+  {
+    "org": "Grassroots Ecology",
+    "color": "#8a6d1f",
+    "events": []
+  },
+  {
+    "org": "San Francisco Baykeeper",
+    "color": "#2a8f8f",
+    "events": [],
+    "orgUrl": "https://baykeeper.org/cleanups/"
   }
 ]
