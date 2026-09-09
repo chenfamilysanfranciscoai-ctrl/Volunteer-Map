@@ -16,15 +16,43 @@ What this does, at a high level:
 
 Design notes / honesty about limitations:
   - This was written by Claude based on manually inspecting each org's site once
-    (Sept 2026). It has NOT been run end-to-end against live data, because the
-    sandbox that wrote it has restricted network egress. Trigger this workflow
-    manually once (Actions tab -> "Update volunteer events" -> Run workflow) and
-    check the run log / diff before trusting the weekly schedule.
+    (Sept 2026). Run #1 surfaced real bugs (see CHANGELOG at the bottom of this
+    docstring) which are now fixed as best as they could be verified from a
+    sandbox with no direct network access to these sites -- Claude validated the
+    underlying fixes using a separate interactive browser tool, but could not run
+    THIS script live end-to-end. Treat every manual "Run workflow" as a real test,
+    not a formality: read the log, read the diff.
+  - Several of these sites render their calendar/event links via client-side
+    JavaScript, so a plain HTTP GET sometimes returns HTML that doesn't yet
+    contain the data (no headless browser executes the page's JS). Each such
+    fetch has a Playwright-rendered fallback that only kicks in when the cheap
+    plain-HTTP path finds nothing -- see render_with_playwright().
   - If an org redesigns their page, extraction for that org may silently return
     fewer/no events. Each org is wrapped in its own try/except so one broken
     source doesn't take down the whole run -- check the logs periodically.
   - Never invents registration links: if nothing event-specific is found, the
     event is written without a bookingUrl (falls back to the org's orgUrl, if any).
+    Every bookingUrl is also verified with a real HTTP request before being kept
+    (see verify_url()) -- a link that 404s/times out is dropped, not published.
+
+CHANGELOG:
+  2026-09-09  Initial version.
+  2026-09-16  After run #1 came back with Pacific Beach Coalition and Grassroots
+              Ecology both finding 0 events, and Save The Bay's 2 events failing
+              to geocode:
+                - Added a Playwright-rendered fallback for both the Google
+                  Calendar embed lookup and the HTML-listing detail-link scan,
+                  used only when the plain-HTTP pass finds nothing. (Confirmed
+                  via an interactive browser session that Pacific Beach
+                  Coalition's calendar iframe -- and presumably Grassroots
+                  Ecology's event links -- exist in the rendered DOM; a plain
+                  fetch alone wasn't enough for at least one of these two.)
+                - Added LOCATION_OVERRIDES for known recurring sites plus a
+                  looser retry query, to fix Nominatim geocoding failures on
+                  full venue names like "MLK Regional Shoreline, Oakland".
+                - Added verify_url() to check every extracted bookingUrl
+                  actually resolves (< 400 status after redirects) before it's
+                  written to events.json.
 """
 
 import json
@@ -54,6 +82,17 @@ USER_AGENT = "VolunteerMapBot/1.0 (+https://github.com/chenfamilysanfranciscoai-
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
 HTTP_HEADERS = {"User-Agent": USER_AGENT}
+
+# A few recurring sites where free-text geocoding of the venue name alone is
+# known to fail or land on the wrong spot (e.g. Nominatim doesn't know "MLK" as
+# an abbreviation). Add to this as new mismatches show up in the logs -- match
+# is a case-insensitive substring check against the extracted location text.
+LOCATION_OVERRIDES = {
+    "mlk": (37.7433, -122.1975),  # MLK Jr. Regional Shoreline, Oakland
+    "eden landing": (37.6155, -122.1085),  # Eden Landing Ecological Reserve, Hayward
+    "ravenswood": (37.4784, -122.1997),  # Ravenswood / Cooley Landing, East Palo Alto
+    "radio road": (37.6262, -122.1114),  # Radio Road Marsh, Redwood City
+}
 
 ORGS = [
     {
@@ -155,6 +194,48 @@ def http_get(url, **kwargs):
     return resp.text
 
 
+def render_with_playwright(url):
+    """Fallback for pages that build their calendar/event links with client-side
+    JavaScript, so a plain requests.get() sees an empty shell. Only called when
+    the cheap plain-HTTP path finds nothing -- this is slower (spins up a real
+    headless Chromium) and isn't needed for every org."""
+    from playwright.sync_api import sync_playwright
+
+    log(f"  (falling back to a rendered browser fetch for {url})")
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        try:
+            page = browser.new_page(user_agent=USER_AGENT)
+            page.goto(url, timeout=45000, wait_until="networkidle")
+            # Give any late-loading widgets (e.g. a Google Calendar iframe) a
+            # moment past "networkidle" to finish painting.
+            page.wait_for_timeout(2000)
+            return page.content()
+        finally:
+            browser.close()
+
+
+def verify_url(url, timeout=10):
+    """Confirm a booking link actually resolves before we publish it. A 2xx/3xx
+    (after redirects) counts as good; anything else, or a request that errors
+    out entirely, means we drop the link rather than publish something dead."""
+    try:
+        resp = requests.head(
+            url, headers=HTTP_HEADERS, timeout=timeout, allow_redirects=True
+        )
+        if resp.status_code >= 400:
+            # Some servers don't implement HEAD properly -- retry with GET
+            # before giving up on an otherwise-plausible link.
+            resp = requests.get(
+                url, headers=HTTP_HEADERS, timeout=timeout, allow_redirects=True, stream=True
+            )
+            resp.close()
+        return resp.status_code < 400
+    except requests.RequestException as e:
+        log(f"  ! bookingUrl failed verification, dropping it: {url} ({e})")
+        return False
+
+
 def extract_google_calendar_id(page_html):
     """Google Calendar embeds are plain <iframe src="https://calendar.google.com/calendar/embed?src=...">
     tags present in the server-rendered HTML -- no JS execution needed to find them."""
@@ -212,35 +293,70 @@ def compute_day_name(date_str):
 _geocode_cache = {}
 
 
+def _nominatim_lookup(query):
+    resp = requests.get(
+        NOMINATIM_URL,
+        params={"q": query, "format": "json", "limit": 1, "countrycodes": "us"},
+        headers=HTTP_HEADERS,
+        timeout=15,
+    )
+    resp.raise_for_status()
+    results = resp.json()
+    time.sleep(1)  # be a good citizen of a free shared service -- max 1 req/sec
+    if results:
+        return float(results[0]["lat"]), float(results[0]["lon"])
+    return None
+
+
 def geocode(location_text):
-    """Free OpenStreetMap Nominatim geocoding. Rate-limited to 1 req/sec per
-    their usage policy (https://operations.osmfoundation.org/policies/nominatim/)."""
+    """Resolve a location string to (lat, lng). Order of attempts:
+      1. LOCATION_OVERRIDES -- known recurring sites we've manually verified.
+      2. Nominatim (OpenStreetMap) on the full location text, with ", USA"
+         appended if no state/country is already present.
+      3. Nominatim again on a loosened version of the query (drop a leading
+         venue name, keep just the "<City>, CA" tail) -- full venue names like
+         "MLK Regional Shoreline, Oakland" sometimes confuse free-text search
+         even though the city+state alone resolves fine.
+    Returns (None, None) if nothing worked, so the caller can skip the event
+    rather than plot a wrong or fabricated pin."""
     if not location_text:
         return None, None
     key = location_text.strip().lower()
     if key in _geocode_cache:
         return _geocode_cache[key]
 
+    for needle, coords in LOCATION_OVERRIDES.items():
+        if needle in key:
+            _geocode_cache[key] = coords
+            return coords
+
     query = location_text
-    if "ca" not in query.lower() and "california" not in query.lower():
-        query = f"{query}, California"
+    if "ca" not in query.lower() and "california" not in query.lower() and "usa" not in query.lower():
+        query = f"{query}, USA"
 
     try:
-        resp = requests.get(
-            NOMINATIM_URL,
-            params={"q": query, "format": "json", "limit": 1},
-            headers=HTTP_HEADERS,
-            timeout=15,
-        )
-        resp.raise_for_status()
-        results = resp.json()
-        time.sleep(1)  # be a good citizen of a free shared service
-        if results:
-            lat, lng = float(results[0]["lat"]), float(results[0]["lon"])
-            _geocode_cache[key] = (lat, lng)
-            return lat, lng
+        result = _nominatim_lookup(query)
+        if result:
+            _geocode_cache[key] = result
+            return result
     except Exception as e:
         log(f"  ! geocoding failed for '{location_text}': {e}")
+
+    # Loosen the query: keep only the last couple of comma-separated segments
+    # (typically "<city>, <state>"), which is more likely to be recognized.
+    parts = [p.strip() for p in location_text.split(",") if p.strip()]
+    if len(parts) > 1:
+        loose_query = ", ".join(parts[-2:]) + ", USA"
+        if loose_query.lower() != query.lower():
+            try:
+                result = _nominatim_lookup(loose_query)
+                if result:
+                    log(f"  (geocoded '{location_text}' via loosened query '{loose_query}')")
+                    _geocode_cache[key] = result
+                    return result
+            except Exception as e:
+                log(f"  ! loosened geocoding also failed for '{location_text}': {e}")
+
     _geocode_cache[key] = (None, None)
     return None, None
 
@@ -253,7 +369,15 @@ def process_google_calendar_org(client, org_cfg):
     page_html = http_get(org_cfg["calendar_page"])
     cal_id = extract_google_calendar_id(page_html)
     if not cal_id:
-        log(f"  ! could not find a Google Calendar id on {org_cfg['calendar_page']}")
+        # The iframe is probably injected by client-side JS on this site rather
+        # than present in the raw server HTML (confirmed to be the case for at
+        # least one org this way) -- render it with a real browser and retry.
+        page_html = render_with_playwright(org_cfg["calendar_page"])
+        cal_id = extract_google_calendar_id(page_html)
+    if not cal_id:
+        log(f"  ! could not find a Google Calendar id on {org_cfg['calendar_page']} "
+            f"even after a rendered-browser fetch -- the page structure may have "
+            f"changed more substantially and needs a human look")
         return []
     ics_text = fetch_google_calendar_ics(cal_id)
 
@@ -273,6 +397,13 @@ def process_google_calendar_org(client, org_cfg):
 def process_html_listing_org(client, org_cfg):
     listing_html = http_get(org_cfg["listing_page"])
     detail_urls = sorted(set(re.findall(org_cfg["detail_link_pattern"], listing_html)))[:15]
+
+    if not detail_urls:
+        # As with the calendar embeds, this listing may render its event links
+        # via client-side JS -- retry with a rendered fetch before giving up.
+        listing_html = render_with_playwright(org_cfg["listing_page"])
+        detail_urls = sorted(set(re.findall(org_cfg["detail_link_pattern"], listing_html)))[:15]
+
     log(f"  found {len(detail_urls)} detail page(s)")
 
     combined = f"--- LISTING PAGE ({org_cfg['listing_page']}) ---\n{listing_html[:20000]}\n"
@@ -330,6 +461,10 @@ def main():
                 log(f"  ! could not geocode '{ev.get('location')}' -- skipping this event")
                 continue
 
+            booking_url = ev.get("bookingUrl")
+            if booking_url and not verify_url(booking_url):
+                booking_url = None  # dropped, not published -- see verify_url()
+
             cleaned_events.append(
                 {
                     "name": ev["name"],
@@ -340,7 +475,7 @@ def main():
                     "lat": round(lat, 4),
                     "lng": round(lng, 4),
                     "location": ev.get("location", ""),
-                    **({"bookingUrl": ev["bookingUrl"]} if ev.get("bookingUrl") else {}),
+                    **({"bookingUrl": booking_url} if booking_url else {}),
                 }
             )
 
