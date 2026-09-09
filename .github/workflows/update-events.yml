@@ -10,6 +10,14 @@ on:
 permissions:
   contents: write
 
+# Only one run of this workflow at a time -- e.g. a manual "Run workflow" click
+# that overlaps with the scheduled run is the most likely way the remote branch
+# moves out from under this job between checkout and push. Queue instead of
+# running concurrently rather than racing to push.
+concurrency:
+  group: update-events
+  cancel-in-progress: false
+
 jobs:
   update-events:
     runs-on: ubuntu-latest
@@ -24,6 +32,13 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Install Playwright's Chromium
+        # Only needed as a fallback for sites whose calendar/event links are
+        # injected by client-side JS -- see render_with_playwright() in the
+        # script. --with-deps pulls in the OS libraries Chromium needs on the
+        # bare Ubuntu runner.
+        run: playwright install --with-deps chromium
 
       - name: Run event updater
         env:
@@ -40,4 +55,22 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add events.json
           git commit -m "Auto-update volunteer events [skip ci]"
-          git push
+
+          # The checkout at the top of this job is a snapshot from when the run
+          # started -- if anything else landed on main since then (another run,
+          # a manual commit), a plain `git push` is rejected with "fetch first".
+          # Rebase our one commit onto whatever is actually on main right now,
+          # then push, retrying a few times in case of a tight race.
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              echo "Pushed on attempt $attempt"
+              exit 0
+            fi
+            # Leave a clean slate for the next attempt even if the rebase
+            # itself is what failed (e.g. a real conflict, not just a race).
+            git rebase --abort 2>/dev/null || true
+            echo "Push attempt $attempt failed, retrying after a short wait..."
+            sleep $((attempt * 5))
+          done
+          echo "Failed to push events.json after 5 attempts -- if this keeps happening, it's a real conflict (e.g. events.json was hand-edited) rather than a race, and needs a human to sort out" >&2
+          exit 1
