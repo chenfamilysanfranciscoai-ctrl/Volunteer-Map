@@ -53,6 +53,38 @@ CHANGELOG:
                 - Added verify_url() to check every extracted bookingUrl
                   actually resolves (< 400 status after redirects) before it's
                   written to events.json.
+  2026-09-10  The Playwright fallback landed but Pacific Beach Coalition was
+              STILL coming back with 0 events. Root-caused for real this time
+              via an interactive browser session against the live pages:
+                - extract_google_calendar_id()'s regex required `src=` to be
+                  the literal first query parameter right after
+                  `calendar/embed?`. Pacific Beach Coalition's embed code puts
+                  it 8th (after height/wkst/bgcolor/ctz/showCalendars/
+                  showTitle/showNav), so the id was never found, on either the
+                  plain fetch OR the Playwright-rendered fetch -- this was
+                  never actually a JS-rendering problem for this org. Rewrote
+                  it to parse the full query string with urllib.parse so
+                  parameter order doesn't matter.
+                - Separately, even with the id correctly extracted, Pacific
+                  Beach Coalition's calendar has public *embedding* enabled
+                  but not the public *iCal export* -- its
+                  /public/basic.ics URL 404s even though the embed itself
+                  shows real events (confirmed by loading both directly).
+                  Added render_google_calendar_agenda() as a fallback: when
+                  the ICS fetch fails, render the same public calendar's own
+                  agenda-mode view (?mode=AGENDA) with Playwright and hand its
+                  plain-text event listing to Claude instead. Confirmed this
+                  view lists every upcoming Pacific Beach Coalition event out
+                  past our 56-day lookahead window.
+                - Grassroots Ecology is still returning 0 events and was NOT
+                  resolved this round -- its listing page renders as plain
+                  server HTML with matching detail links when spot-checked,
+                  so the cause isn't obvious yet. Added explicit logging of
+                  the fetched HTML size and the number of detail links found
+                  in process_html_listing_org() so the next real run's logs
+                  pin down whether the regex is finding 0 detail URLs, or
+                  finding them but Claude still isn't extracting events from
+                  the combined text.
 """
 
 import json
@@ -237,14 +269,31 @@ def verify_url(url, timeout=10):
 
 
 def extract_google_calendar_id(page_html):
-    """Google Calendar embeds are plain <iframe src="https://calendar.google.com/calendar/embed?src=...">
-    tags present in the server-rendered HTML -- no JS execution needed to find them."""
-    m = re.search(r'calendar\.google\.com/calendar/embed\?src=([^&"\']+)', page_html)
+    """Google Calendar embeds are plain <iframe src="https://calendar.google.com/calendar/embed?...">
+    tags present in the server-rendered HTML -- no JS execution needed to find them.
+
+    Don't assume `src` is any particular parameter in the query string -- Google's
+    own embed code doesn't put it first for every org (confirmed: Pacific Beach
+    Coalition's embed URL is `...embed?height=...&wkst=...&bgcolor=...&ctz=...&
+    showCalendars=...&showTitle=...&showNav=...&src=<id>&color=...`, with `src`
+    8th). Grab the whole query string after `embed?` and parse it properly
+    instead of anchoring a regex to `?src=`."""
+    m = re.search(r'calendar\.google\.com/calendar/embed\?([^"\'<>\s]+)', page_html)
     if not m:
         return None
-    from urllib.parse import unquote
+    import html
+    from urllib.parse import parse_qs, unquote
 
-    return unquote(m.group(1))
+    # Server-rendered HTML represents the "&" between query params as the
+    # entity "&amp;" inside an attribute value -- unescape that (and
+    # unquote() any %-encoding) before splitting into individual params, or
+    # everything after the first param gets swallowed into one bogus key.
+    query_string = html.unescape(unquote(m.group(1)))
+    qs = parse_qs(query_string)
+    src_values = qs.get("src")
+    if not src_values:
+        return None
+    return src_values[0]
 
 
 def fetch_google_calendar_ics(calendar_id):
@@ -252,6 +301,33 @@ def fetch_google_calendar_ics(calendar_id):
 
     ics_url = f"https://calendar.google.com/calendar/ical/{quote(calendar_id)}/public/basic.ics"
     return http_get(ics_url)
+
+
+def render_google_calendar_agenda(calendar_id):
+    """Fallback for calendars where public *embedding* is enabled but public
+    *iCal export* isn't -- their /public/basic.ics 404s even though the embed
+    itself shows real events. Confirmed to be the case for Pacific Beach
+    Coalition's calendar specifically (loaded both URLs directly: the embed
+    shows a full month of real events, the .ics URL 404s).
+
+    Google's own agenda-mode view of the same public embed lists every event
+    as plain text -- date, time, title, location -- which Claude can parse
+    just as well as an ICS feed, and it's driven by the same public sharing
+    setting the embed already relies on, so it works anywhere the embed does."""
+    from urllib.parse import quote
+    from playwright.sync_api import sync_playwright
+
+    url = f"https://calendar.google.com/calendar/embed?src={quote(calendar_id)}&mode=AGENDA"
+    log("  (this calendar's public iCal export is unavailable -- rendering its agenda view instead)")
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        try:
+            page = browser.new_page(user_agent=USER_AGENT)
+            page.goto(url, timeout=45000, wait_until="networkidle")
+            page.wait_for_timeout(2000)
+            return page.inner_text("body")
+        finally:
+            browser.close()
 
 
 def claude_extract_events(client, org_name, source_text, extra_context=""):
@@ -379,7 +455,16 @@ def process_google_calendar_org(client, org_cfg):
             f"even after a rendered-browser fetch -- the page structure may have "
             f"changed more substantially and needs a human look")
         return []
-    ics_text = fetch_google_calendar_ics(cal_id)
+    try:
+        source_text = fetch_google_calendar_ics(cal_id)
+    except requests.RequestException as e:
+        # Some calendars have public *embedding* enabled without public *iCal
+        # export* enabled -- those are two separate sharing settings in Google
+        # Calendar, and a site owner can easily turn on the first without the
+        # second. Confirmed this is exactly what's happening for Pacific Beach
+        # Coalition: the embed shows real events, but /public/basic.ics 404s.
+        log(f"  ! iCal export failed for this calendar ({e}) -- falling back to its agenda view")
+        source_text = render_google_calendar_agenda(cal_id)
 
     extra_context = ""
     if org_cfg.get("has_site_form_table"):
@@ -391,18 +476,24 @@ def process_google_calendar_org(client, org_cfg):
             + page_html[:60000]
         )
 
-    return claude_extract_events(client, org_cfg["org"], ics_text, extra_context)
+    raw_events = claude_extract_events(client, org_cfg["org"], source_text, extra_context)
+    log(f"  Claude extracted {len(raw_events)} raw event(s) (before date filtering/geocoding)")
+    return raw_events
 
 
 def process_html_listing_org(client, org_cfg):
     listing_html = http_get(org_cfg["listing_page"])
+    log(f"  fetched listing page: {len(listing_html)} chars (plain HTTP)")
     detail_urls = sorted(set(re.findall(org_cfg["detail_link_pattern"], listing_html)))[:15]
+    log(f"  detail-link regex found {len(detail_urls)} match(es) in the plain fetch")
 
     if not detail_urls:
         # As with the calendar embeds, this listing may render its event links
         # via client-side JS -- retry with a rendered fetch before giving up.
         listing_html = render_with_playwright(org_cfg["listing_page"])
+        log(f"  re-fetched via Playwright: {len(listing_html)} chars")
         detail_urls = sorted(set(re.findall(org_cfg["detail_link_pattern"], listing_html)))[:15]
+        log(f"  detail-link regex found {len(detail_urls)} match(es) after rendering")
 
     log(f"  found {len(detail_urls)} detail page(s)")
 
@@ -414,7 +505,10 @@ def process_html_listing_org(client, org_cfg):
         except Exception as e:
             log(f"  ! failed to fetch detail page {url}: {e}")
 
-    return claude_extract_events(client, org_cfg["org"], combined)
+    raw_events = claude_extract_events(client, org_cfg["org"], combined)
+    log(f"  Claude extracted {len(raw_events)} raw event(s) from {len(combined)} chars of source text "
+        f"(before date filtering/geocoding)")
+    return raw_events
 
 
 def main():
