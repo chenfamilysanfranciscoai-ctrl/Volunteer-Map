@@ -15,17 +15,6 @@
         "bookingUrl": "https://qrco.de/OBbioblitz"
       },
       {
-        "name": "Coastal Cleanup Day",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "12:00 PM",
-        "lat": 37.7879,
-        "lng": -122.4075,
-        "location": "San Francisco, CA",
-        "bookingUrl": "https://x.gldn.io/e/CzRklB5sA5b"
-      },
-      {
         "name": "Ocean Beach Cleanup - Surfrider San Francisco",
         "date": "2026-10-04",
         "day": "Sunday",
