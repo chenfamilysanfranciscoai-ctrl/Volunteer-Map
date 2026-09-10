@@ -85,6 +85,33 @@ CHANGELOG:
                   pin down whether the regex is finding 0 detail URLs, or
                   finding them but Claude still isn't extracting events from
                   the combined text.
+  2026-09-10b The above logging paid off immediately -- run #3's log showed
+              exactly what was still wrong for both orgs:
+                - Grassroots Ecology: the plain fetch pulled down 488KB of
+                  real HTML and STILL matched 0 detail links, on both the
+                  plain and Playwright-rendered fetch (489KB, same 0). Not a
+                  JS problem after all -- confirmed via the live page's actual
+                  href attributes that this site's event links are relative
+                  paths ("/event-calendar/2026/09/09/..."), never prefixed
+                  with the domain, so a pattern anchored to
+                  "https://www.grassrootsecology.org/..." could never match.
+                  Changed the pattern to match the relative form and added
+                  _find_detail_urls(), which resolves whatever the pattern
+                  finds against the listing page's own URL (urljoin) -- a
+                  no-op for an org with absolute links like Save The Bay, but
+                  required for one with relative links like this.
+                - Pacific Beach Coalition: the iCal-unavailable fallback DID
+                  trigger correctly and rendered the agenda view, but Claude
+                  extracted 0 events from whatever text came back -- with no
+                  visibility into what that text actually was. Added logging
+                  of the rendered text's length and first 200 characters, plus
+                  a defensive click-past-the-consent-dialog step (a completely
+                  fresh, cookie-less Playwright browser -- which is what every
+                  CI run is -- can get served Google's "Before you continue"
+                  interstitial instead of the calendar itself; this wasn't
+                  reproducible by hand since an already-logged-in interactive
+                  browser doesn't see it). Next run's log will show directly
+                  whether this was the cause.
 """
 
 import json
@@ -156,7 +183,16 @@ ORGS = [
         "color": "#8a6d1f",
         "kind": "html_listing",
         "listing_page": "https://www.grassrootsecology.org/event-calendar",
-        "detail_link_pattern": r'https://www\.grassrootsecology\.org/event-calendar/\d{4}/\d{2}/\d{2}/[a-z0-9\-]+',
+        # This site's own event links are relative (e.g.
+        # href="/event-calendar/2026/09/09/volunteer-at-russian-ridge"), never
+        # prefixed with the domain -- confirmed by inspecting the real page's
+        # raw href attributes. A pattern anchored to "https://www..." never
+        # matched anything, which is why this org always came back with 0
+        # events regardless of Playwright. process_html_listing_org() resolves
+        # whatever this matches against listing_page, so a relative pattern
+        # here is enough (and still works fine for an org whose links happen
+        # to be absolute, like Save The Bay below).
+        "detail_link_pattern": r'/event-calendar/\d{4}/\d{2}/\d{2}/[a-z0-9\-]+',
     },
     {
         "org": "San Francisco Baykeeper",
@@ -324,8 +360,24 @@ def render_google_calendar_agenda(calendar_id):
         try:
             page = browser.new_page(user_agent=USER_AGENT)
             page.goto(url, timeout=45000, wait_until="networkidle")
+            # A completely fresh, cookie-less browser (which is what a CI
+            # runner always is) sometimes gets Google's "Before you continue"
+            # consent interstitial instead of the calendar itself. Click past
+            # it if present -- harmless no-op when it isn't.
+            for label in ["Accept all", "I agree", "Accept"]:
+                try:
+                    btn = page.get_by_role("button", name=label, exact=False)
+                    if btn.count() > 0:
+                        btn.first.click(timeout=3000)
+                        page.wait_for_timeout(1500)
+                        break
+                except Exception:
+                    pass
             page.wait_for_timeout(2000)
-            return page.inner_text("body")
+            body_text = page.inner_text("body")
+            log(f"  agenda view rendered {len(body_text)} chars of text "
+                f"(first 200: {body_text[:200]!r})")
+            return body_text
         finally:
             browser.close()
 
@@ -481,10 +533,21 @@ def process_google_calendar_org(client, org_cfg):
     return raw_events
 
 
+def _find_detail_urls(listing_page, listing_html, pattern):
+    """Resolve whatever the pattern matches against the listing page's own URL --
+    a no-op for an already-absolute match (e.g. Save The Bay), but required for
+    a site like Grassroots Ecology whose event links are relative paths."""
+    from urllib.parse import urljoin
+
+    matches = re.findall(pattern, listing_html)
+    resolved = {urljoin(listing_page, m) for m in matches}
+    return sorted(resolved)[:15]
+
+
 def process_html_listing_org(client, org_cfg):
     listing_html = http_get(org_cfg["listing_page"])
     log(f"  fetched listing page: {len(listing_html)} chars (plain HTTP)")
-    detail_urls = sorted(set(re.findall(org_cfg["detail_link_pattern"], listing_html)))[:15]
+    detail_urls = _find_detail_urls(org_cfg["listing_page"], listing_html, org_cfg["detail_link_pattern"])
     log(f"  detail-link regex found {len(detail_urls)} match(es) in the plain fetch")
 
     if not detail_urls:
@@ -492,7 +555,7 @@ def process_html_listing_org(client, org_cfg):
         # via client-side JS -- retry with a rendered fetch before giving up.
         listing_html = render_with_playwright(org_cfg["listing_page"])
         log(f"  re-fetched via Playwright: {len(listing_html)} chars")
-        detail_urls = sorted(set(re.findall(org_cfg["detail_link_pattern"], listing_html)))[:15]
+        detail_urls = _find_detail_urls(org_cfg["listing_page"], listing_html, org_cfg["detail_link_pattern"])
         log(f"  detail-link regex found {len(detail_urls)} match(es) after rendering")
 
     log(f"  found {len(detail_urls)} detail page(s)")
