@@ -11,7 +11,7 @@
         "end": "1:30 PM",
         "lat": 37.7562,
         "lng": -122.5102,
-        "location": "Ocean Beach, San Francisco, CA",
+        "location": "Ocean Beach, San Francisco, CA, USA",
         "bookingUrl": "https://qrco.de/OBbioblitz"
       },
       {
@@ -33,7 +33,7 @@
         "end": "12:00 PM",
         "lat": 37.7562,
         "lng": -122.5102,
-        "location": "Ocean Beach, San Francisco, CA",
+        "location": "Ocean Beach, San Francisco, CA, USA",
         "bookingUrl": "https://x.gldn.io/e/9B5JZOXsA5b"
       },
       {
@@ -44,7 +44,7 @@
         "end": "12:00 PM",
         "lat": 37.7562,
         "lng": -122.5102,
-        "location": "Ocean Beach, San Francisco, CA",
+        "location": "Ocean Beach, San Francisco, CA, USA",
         "bookingUrl": "https://x.gldn.io/e/BggST6TsA5b"
       }
     ]
@@ -57,7 +57,30 @@
   {
     "org": "Save The Bay",
     "color": "#3b6ea5",
-    "events": []
+    "events": [
+      {
+        "name": "Coastal Cleanup Day at MLK Regional Shoreline (Oakland)",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.7433,
+        "lng": -122.1975,
+        "location": "MLK Regional Shoreline, Oakland",
+        "bookingUrl": "https://savesfbay.org/event/coastal-cleanup-day-at-mlk-regional-shoreline-oakland-1oapyaq/"
+      },
+      {
+        "name": "Habitat Restoration at Eden Landing (Hayward)",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.6155,
+        "lng": -122.1085,
+        "location": "Eden Landing Ecological Reserve, Hayward",
+        "bookingUrl": "https://savesfbay.org/event/habitat-restoration-at-eden-landing-hayward-1jxwyay/"
+      }
+    ]
   },
   {
     "org": "Grassroots Ecology",
