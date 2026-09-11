@@ -142,6 +142,53 @@ CHANGELOG:
                   made the date-range skip in main() always log the event name
                   and why it was dropped, so this class of "everything silently
                   vanished" never has to be re-diagnosed blind again.
+  2026-09-11  Run #6 (the first run with all of the above fixes applied)
+              crashed the whole script: `Claude extracted 1071 raw event(s)`
+              for Grassroots Ecology, then a TypeError ("string indices must
+              be integers") once the cleaning loop hit one of them, because
+              those 1071 "events" were plain strings, not the objects
+              record_events' schema requires -- and that loop only caught
+              ValueError/KeyError, not TypeError, so it went unhandled and
+              killed main() before events.json was ever written. That threw
+              away Surfrider's and Save The Bay's perfectly good results for
+              the run too, not just Grassroots Ecology's bad ones -- a single
+              malformed record from one org shouldn't be able to do that.
+              Added two layers of defense: claude_extract_events() now drops
+              any non-object entries right at the source (logging how many),
+              and the cleaning loop in main() now skips a non-dict event
+              outright and wraps the rest of the per-event work in a broad
+              try/except, so nothing short of the whole process dying can
+              stop events.json from being written with whatever good data was
+              actually collected.
+  2026-09-11b Paul re-ran before this fix had actually been pasted in, so run
+              #7 hit the identical crash again on the identical line -- but
+              its log was still useful: with the earlier UA/stabilize fix,
+              Pacific Beach Coalition's agenda view now genuinely works
+              (30 raw events extracted, 13 kept), which resolves the "PBC
+              extracts nothing" thread from before. What's left is a
+              geocoding gap: 8 of those PBC events failed to geocode, and
+              looking at the failing addresses, several are subtly corrupted
+              by the extraction step -- e.g. "Pacifica State Beach, 1416 9th
+              St, California 95814, United States" carries a Sacramento zip
+              code that has nothing to do with Pacifica. The single "last 2
+              comma-separated segments" fallback couldn't recover from that
+              (it produced "California 95814, United States", dropping the
+              city entirely). Verified live against Nominatim's real API
+              (not simulated) that every one of these failing addresses'
+              *venue name alone* -- "Sharp Park Beach, CA", "Pacifica State
+              Beach, CA", "Montara Beach, CA", "Thornton State Beach, CA" --
+              resolves correctly to the real place, since named parks/beaches
+              are already in OpenStreetMap under their own name regardless of
+              what's wrong with the rest of the address. Rewrote geocode()
+              around a general, ordered list of fallback query shapes (full
+              address -> venue name alone -> last 3 segments -> last 2
+              segments) instead of a single hardcoded loosening, verified the
+              exact addresses from run #7's log now resolve to their real,
+              live-checked coordinates, and re-ran a full mocked dry run of
+              main() end to end (every known bad-data shape from every past
+              run, all at once) confirming nothing crashes and every
+              previously-working path (LOCATION_OVERRIDES, already-good
+              addresses) is unaffected.
 """
 
 import json
@@ -466,7 +513,22 @@ def claude_extract_events(client, org_name, source_text, extra_context=""):
     )
     for block in resp.content:
         if block.type == "tool_use" and block.name == "record_events":
-            return block.input.get("events", [])
+            raw = block.input.get("events", [])
+            if not isinstance(raw, list):
+                log(f"  ! record_events tool call's 'events' field wasn't a list (got "
+                    f"{type(raw).__name__}) -- treating as no events extracted")
+                return []
+            # Run #6: for Grassroots Ecology specifically, this came back as
+            # 1071 plain strings instead of event objects -- the schema
+            # requires objects, but a forced tool call isn't a hard
+            # guarantee Claude always honors every field's declared type.
+            # Filter those out here, at the source, rather than letting bad
+            # entries travel downstream into date-parsing/geocoding.
+            valid = [ev for ev in raw if isinstance(ev, dict)]
+            if len(valid) != len(raw):
+                log(f"  ! record_events returned {len(raw) - len(valid)} non-object entr"
+                    f"{'y' if len(raw) - len(valid) == 1 else 'ies'} out of {len(raw)} -- dropped, kept {len(valid)}")
+            return valid
     return []
 
 
@@ -495,15 +557,77 @@ def _nominatim_lookup(query):
     return None
 
 
+def _build_geocode_attempts(location_text):
+    """Build an ordered list of (label, query) attempts to try against
+    Nominatim for a single location string. Most-specific first, broadest
+    last -- stop at the first one that resolves.
+
+    Run #7's log showed exactly why a single "loosen to last 2 segments"
+    fallback isn't enough: for
+    "Pacifica State Beach, 1416 9th St, California 95814, United States"
+    (a genuinely corrupted address -- 95814 is a Sacramento zip code, not
+    Pacifica's -- an artifact of how the source text got extracted), the
+    last-2-segments fallback produces "California 95814, United States",
+    which drops the city entirely and still fails. Verified live against
+    Nominatim's own API that the fix isn't a smarter loosening of THIS
+    address -- it's using the venue name alone: "Pacifica State Beach, CA"
+    resolves immediately to the actual beach. Same result for "Montara State
+    Beach, CA" (another of that run's failures). Named parks/beaches are
+    already in OpenStreetMap's database under their own name, so when the
+    surrounding address text is noisy or wrong, the venue name by itself is
+    often *more* reliable than trying to fix the address around it."""
+    attempts = []
+    full = location_text
+    def with_usa(s):
+        # Append ", USA" only if the string doesn't already end in something
+        # that names the country -- joining segments that already include a
+        # trailing "USA" segment (common once the source address is fully
+        # qualified) was otherwise producing queries like "...CA 94015, USA,
+        # USA". Harmless to Nominatim either way, but noisy and worth doing
+        # properly.
+        return s if "usa" in s.lower() else f"{s}, USA"
+
+    if not any(tok in full.lower() for tok in ("ca", "california", "usa")):
+        full = with_usa(full)
+    attempts.append(("full text", full))
+
+    parts = [p.strip() for p in location_text.split(",") if p.strip()]
+
+    if len(parts) > 1:
+        # Venue name alone (first segment) + state -- catches corrupted or
+        # overly-specific addresses where the place name itself is what's
+        # actually in the map database.
+        attempts.append(("venue name only", f"{parts[0]}, CA, USA"))
+
+        # Last 3 segments -- catches "<city>, <state> <zip>, USA" shapes
+        # where the last-2 fallback below would drop the city and keep only
+        # the state/zip.
+        if len(parts) > 2:
+            attempts.append(("last 3 segments", with_usa(", ".join(parts[-3:]))))
+
+        # Last 2 segments (the original fallback) -- typically "<city>,
+        # <state>", the broadest attempt, tried last.
+        attempts.append(("last 2 segments", with_usa(", ".join(parts[-2:]))))
+
+    # De-duplicate (case-insensitive) while preserving order -- short
+    # addresses can make several of the above identical.
+    seen = set()
+    deduped = []
+    for label, q in attempts:
+        qkey = q.lower()
+        if qkey not in seen:
+            seen.add(qkey)
+            deduped.append((label, q))
+    return deduped
+
+
 def geocode(location_text):
     """Resolve a location string to (lat, lng). Order of attempts:
       1. LOCATION_OVERRIDES -- known recurring sites we've manually verified.
-      2. Nominatim (OpenStreetMap) on the full location text, with ", USA"
-         appended if no state/country is already present.
-      3. Nominatim again on a loosened version of the query (drop a leading
-         venue name, keep just the "<City>, CA" tail) -- full venue names like
-         "MLK Regional Shoreline, Oakland" sometimes confuse free-text search
-         even though the city+state alone resolves fine.
+      2. A series of Nominatim (OpenStreetMap) queries built by
+         _build_geocode_attempts(), from most-specific (the full address) to
+         broadest (city + state) -- see that function's docstring for why
+         more than one fallback shape is needed.
     Returns (None, None) if nothing worked, so the caller can skip the event
     rather than plot a wrong or fabricated pin."""
     if not location_text:
@@ -517,33 +641,22 @@ def geocode(location_text):
             _geocode_cache[key] = coords
             return coords
 
-    query = location_text
-    if "ca" not in query.lower() and "california" not in query.lower() and "usa" not in query.lower():
-        query = f"{query}, USA"
-
-    try:
-        result = _nominatim_lookup(query)
+    for label, query in _build_geocode_attempts(location_text):
+        try:
+            result = _nominatim_lookup(query)
+        except Exception as e:
+            log(f"  ! geocoding attempt ({label}) failed for '{location_text}': {e}")
+            continue
         if result:
+            if label != "full text":
+                log(f"  (geocoded '{location_text}' via {label}: '{query}')")
             _geocode_cache[key] = result
             return result
-    except Exception as e:
-        log(f"  ! geocoding failed for '{location_text}': {e}")
 
-    # Loosen the query: keep only the last couple of comma-separated segments
-    # (typically "<city>, <state>"), which is more likely to be recognized.
-    parts = [p.strip() for p in location_text.split(",") if p.strip()]
-    if len(parts) > 1:
-        loose_query = ", ".join(parts[-2:]) + ", USA"
-        if loose_query.lower() != query.lower():
-            try:
-                result = _nominatim_lookup(loose_query)
-                if result:
-                    log(f"  (geocoded '{location_text}' via loosened query '{loose_query}')")
-                    _geocode_cache[key] = result
-                    return result
-            except Exception as e:
-                log(f"  ! loosened geocoding also failed for '{location_text}': {e}")
-
+    # Don't log the overall failure here -- the caller (main()) already logs
+    # "could not geocode '<location>' -- skipping this event" for every
+    # event this returns (None, None) for; logging it again here would just
+    # duplicate that line.
     _geocode_cache[key] = (None, None)
     return None, None
 
@@ -700,43 +813,66 @@ def main():
 
         cleaned_events = []
         for ev in events:
+            # Run #6 crashed the ENTIRE script here: Claude's tool response for
+            # Grassroots Ecology came back with `events` containing 1071
+            # entries that were plain strings, not event objects (some
+            # degenerate/repetitive echo of the source text rather than a
+            # real extraction -- the *why* wasn't fully diagnosable from the
+            # log, but the shape of the bad data was clear: `ev["date"]`
+            # threw TypeError, a class this loop didn't catch). Because that
+            # was outside any try/except, it killed the whole run before
+            # events.json was ever written -- throwing away Surfrider and
+            # Save The Bay's perfectly good results along with it, not just
+            # Grassroots Ecology's bad ones. Two layers of defense now: skip
+            # anything that isn't actually an event object, and never let a
+            # single malformed record from one org take down every org.
+            if not isinstance(ev, dict):
+                log(f"  ! skipping malformed (non-object) event entry: {ev!r:.100}")
+                continue
             try:
-                ev_date = datetime.strptime(ev["date"], "%Y-%m-%d").date()
-            except (ValueError, KeyError):
-                log(f"  ! skipping event with unparsable date: {ev}")
-                continue
-            if not (today <= ev_date <= cutoff):
-                # This used to be a silent `continue` -- when it's every single
-                # extracted event (as happened for Grassroots Ecology in run
-                # #4, all 7 dropped here with zero explanation in the log),
-                # there was no way to tell this apart from a geocoding problem
-                # or Claude finding nothing at all. Always log why.
-                reason = "before today" if ev_date < today else f"beyond the {LOOKAHEAD_DAYS}-day lookahead"
-                log(f"  ! skipping '{ev.get('name')}' on {ev['date']} -- {reason}")
-                continue
+                try:
+                    ev_date = datetime.strptime(ev["date"], "%Y-%m-%d").date()
+                except (ValueError, KeyError, TypeError):
+                    log(f"  ! skipping event with unparsable date: {ev}")
+                    continue
+                if not (today <= ev_date <= cutoff):
+                    # This used to be a silent `continue` -- when it's every
+                    # single extracted event (as happened for Grassroots
+                    # Ecology in run #4, all 7 dropped here with zero
+                    # explanation in the log), there was no way to tell this
+                    # apart from a geocoding problem or Claude finding
+                    # nothing at all. Always log why.
+                    reason = "before today" if ev_date < today else f"beyond the {LOOKAHEAD_DAYS}-day lookahead"
+                    log(f"  ! skipping '{ev.get('name')}' on {ev['date']} -- {reason}")
+                    continue
 
-            lat, lng = geocode(ev.get("location", ""))
-            if lat is None:
-                log(f"  ! could not geocode '{ev.get('location')}' -- skipping this event")
+                lat, lng = geocode(ev.get("location", ""))
+                if lat is None:
+                    log(f"  ! could not geocode '{ev.get('location')}' -- skipping this event")
+                    continue
+
+                booking_url = ev.get("bookingUrl")
+                if booking_url and not verify_url(booking_url):
+                    booking_url = None  # dropped, not published -- see verify_url()
+
+                cleaned_events.append(
+                    {
+                        "name": ev["name"],
+                        "date": ev["date"],
+                        "day": compute_day_name(ev["date"]),
+                        "start": ev.get("start", ""),
+                        "end": ev.get("end"),
+                        "lat": round(lat, 4),
+                        "lng": round(lng, 4),
+                        "location": ev.get("location", ""),
+                        **({"bookingUrl": booking_url} if booking_url else {}),
+                    }
+                )
+            except Exception as e:
+                # Belt-and-suspenders: whatever this is, one bad record must
+                # never take the whole run down with it.
+                log(f"  ! unexpected error cleaning event {ev!r:.200} -- skipping it: {e}")
                 continue
-
-            booking_url = ev.get("bookingUrl")
-            if booking_url and not verify_url(booking_url):
-                booking_url = None  # dropped, not published -- see verify_url()
-
-            cleaned_events.append(
-                {
-                    "name": ev["name"],
-                    "date": ev["date"],
-                    "day": compute_day_name(ev["date"]),
-                    "start": ev.get("start", ""),
-                    "end": ev.get("end"),
-                    "lat": round(lat, 4),
-                    "lng": round(lng, 4),
-                    "location": ev.get("location", ""),
-                    **({"bookingUrl": booking_url} if booking_url else {}),
-                }
-            )
 
         cleaned_events.sort(key=lambda e: (e["date"], e["start"]))
         log(f"  -> {len(cleaned_events)} upcoming event(s) kept")
