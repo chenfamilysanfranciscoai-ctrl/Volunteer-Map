@@ -112,6 +112,36 @@ CHANGELOG:
                   reproducible by hand since an already-logged-in interactive
                   browser doesn't see it). Next run's log will show directly
                   whether this was the cause.
+  2026-09-10c Paul asked for thoroughness over speed after round 2 still came
+              back with both orgs empty. Run #4's actual log (now readable
+              thanks to the logging added in round 2) explained both:
+                - Pacific Beach Coalition: the agenda view DID render real
+                  content (confirmed: no consent wall, correct page) but only
+                  5390 characters of it -- the header plus one event -- because
+                  a fixed 2-second pause after "networkidle" wasn't enough for
+                  Google Calendar's agenda list to finish populating via its
+                  own follow-up JS/XHR calls. Replaced the fixed pause with
+                  polling page.inner_text("body") until its length stops
+                  growing (checked every second, up to ~20s), and switched to
+                  a normal desktop Chrome user-agent + viewport for this
+                  specific fetch (the generic bot UA is fine for plain HTML
+                  fetches elsewhere, but there's no reason to risk Google's JS
+                  treating an unrecognized UA differently for its own app).
+                - Grassroots Ecology: the link-matching fix from round 2
+                  worked (15 matches, 15 detail pages fetched, Claude
+                  extracted 7 real events) -- but all 7 were silently dropped
+                  by main()'s date-range filter with no log line, because that
+                  check was a bare `continue` with no logging. Root cause:
+                  sorted(set(urls))[:15] sorts URLs alphabetically, which for
+                  this org's date-stamped URLs is also chronological, and the
+                  listing page mixes past and future events together -- so the
+                  "first 15" were mostly already-past events, not the next 15
+                  upcoming ones. Fixed _find_detail_urls() to parse the date
+                  embedded in each URL, drop anything already in the past, and
+                  sort what's left soonest-first before capping to 15. Also
+                  made the date-range skip in main() always log the event name
+                  and why it was dropped, so this class of "everything silently
+                  vanished" never has to be re-diagnosed blind again.
 """
 
 import json
@@ -358,7 +388,18 @@ def render_google_calendar_agenda(calendar_id):
     with sync_playwright() as p:
         browser = p.chromium.launch()
         try:
-            page = browser.new_page(user_agent=USER_AGENT)
+            # A generic bot user-agent is fine for a plain HTML fetch, but
+            # Google Calendar's own front end is a full JS app that reads the
+            # user-agent -- give it a normal desktop Chrome UA and a normal
+            # desktop viewport so it renders the same rich agenda list a real
+            # visitor would get, not a degraded/minimal fallback.
+            page = browser.new_page(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                ),
+                viewport={"width": 1400, "height": 1000},
+            )
             page.goto(url, timeout=45000, wait_until="networkidle")
             # A completely fresh, cookie-less browser (which is what a CI
             # runner always is) sometimes gets Google's "Before you continue"
@@ -373,10 +414,28 @@ def render_google_calendar_agenda(calendar_id):
                         break
                 except Exception:
                     pass
-            page.wait_for_timeout(2000)
+            # The agenda list itself renders progressively via JS/XHR after
+            # "networkidle" -- run #4 confirmed this is real: the page loaded
+            # (no consent wall, no error), but a single fixed 2s pause after
+            # load only ever captured the header plus the very first entry
+            # (5390 chars) instead of the multi-week list a human sees. Poll
+            # until the visible text stops growing instead of guessing a
+            # fixed delay.
+            previous_len = -1
+            stable_checks = 0
+            for _ in range(20):  # up to ~20s total
+                page.wait_for_timeout(1000)
+                current_text = page.inner_text("body")
+                if len(current_text) == previous_len:
+                    stable_checks += 1
+                    if stable_checks >= 2:
+                        break
+                else:
+                    stable_checks = 0
+                previous_len = len(current_text)
             body_text = page.inner_text("body")
-            log(f"  agenda view rendered {len(body_text)} chars of text "
-                f"(first 200: {body_text[:200]!r})")
+            log(f"  agenda view rendered {len(body_text)} chars of text after waiting for it to "
+                f"stabilize (first 200: {body_text[:200]!r})")
             return body_text
         finally:
             browser.close()
@@ -533,15 +592,51 @@ def process_google_calendar_org(client, org_cfg):
     return raw_events
 
 
+_URL_DATE_RE = re.compile(r'/(20\d{2})/(\d{2})/(\d{2})/')
+
+
 def _find_detail_urls(listing_page, listing_html, pattern):
     """Resolve whatever the pattern matches against the listing page's own URL --
     a no-op for an already-absolute match (e.g. Save The Bay), but required for
-    a site like Grassroots Ecology whose event links are relative paths."""
+    a site like Grassroots Ecology whose event links are relative paths.
+
+    A listing page often keeps past events linked alongside upcoming ones (run
+    #4's log showed Grassroots Ecology's 15 matches were the 15
+    *chronologically earliest* event pages on the whole page -- since the date
+    is embedded in the URL, sorting the raw strings put a bunch of already-past
+    events ahead of upcoming ones, and every single one of the 7 events Claude
+    did extract got silently dropped by main()'s today<=date<=cutoff check).
+    When a URL embeds a YYYY/MM/DD date, drop anything clearly in the past and
+    sort what's left soonest-first before capping to 15, so the cap actually
+    keeps the *next* 15 events rather than the *earliest-ever-linked* 15. Falls
+    back to plain alphabetical sort for URLs with no embeddable date (e.g. Save
+    The Bay's slug-only event URLs)."""
     from urllib.parse import urljoin
 
     matches = re.findall(pattern, listing_html)
     resolved = {urljoin(listing_page, m) for m in matches}
-    return sorted(resolved)[:15]
+
+    today_str = date.today().isoformat().replace("-", "")  # e.g. "20260910"
+
+    def sort_key(u):
+        m = _URL_DATE_RE.search(u)
+        if not m:
+            return (1, u)  # no date in the URL -- sort after dated ones, alphabetically
+        y, mo, d = m.groups()
+        return (0, f"{y}{mo}{d}")
+
+    def is_past(u):
+        m = _URL_DATE_RE.search(u)
+        if not m:
+            return False  # can't tell -- don't drop it
+        y, mo, d = m.groups()
+        return f"{y}{mo}{d}" < today_str
+
+    future_or_unknown = [u for u in resolved if not is_past(u)]
+    dropped = len(resolved) - len(future_or_unknown)
+    if dropped:
+        log(f"  dropped {dropped} detail link(s) whose URL date is already in the past")
+    return sorted(future_or_unknown, key=sort_key)[:15]
 
 
 def process_html_listing_org(client, org_cfg):
@@ -611,6 +706,13 @@ def main():
                 log(f"  ! skipping event with unparsable date: {ev}")
                 continue
             if not (today <= ev_date <= cutoff):
+                # This used to be a silent `continue` -- when it's every single
+                # extracted event (as happened for Grassroots Ecology in run
+                # #4, all 7 dropped here with zero explanation in the log),
+                # there was no way to tell this apart from a geocoding problem
+                # or Claude finding nothing at all. Always log why.
+                reason = "before today" if ev_date < today else f"beyond the {LOOKAHEAD_DAYS}-day lookahead"
+                log(f"  ! skipping '{ev.get('name')}' on {ev['date']} -- {reason}")
                 continue
 
             lat, lng = geocode(ev.get("location", ""))
