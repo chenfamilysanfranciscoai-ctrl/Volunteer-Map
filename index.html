@@ -9,371 +9,404 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --moss: #4a7856;
-    --moss-dark: #24402c;
-    --moss-light: #eef4ee;
-    --clay: #d9642b;
-    --clay-dark: #b8531f;
-    --ink: #1f2b23;
-    --paper: #fbfaf7;
-    --line: #e4e0d6;
-  }
-  *{ box-sizing: border-box; }
-  html, body{
-    margin: 0;
-    height: 100%;
-    font-family: 'Inter', system-ui, sans-serif;
-    background: var(--paper);
-    color: var(--ink);
-  }
-  header{
-    background: var(--paper);
-    border-bottom: 1px solid var(--line);
-    padding: 16px 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .brand{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .brand-icon{
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-    background: var(--moss);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-  }
-  header h1{
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--moss-dark);
-    letter-spacing: -0.01em;
-  }
-  header p{
-    margin: 0;
-    font-size: 0.78rem;
-    color: #8a8577;
-  }
-  #map-wrap{
-    position: relative;
-    width: 100%;
-    height: calc(100vh - 68px);
-  }
-  #map{
-    width: 100%;
-    height: 100%;
-    background: var(--moss-light) !important;
-  }
-  .leaflet-tile{
-    filter: saturate(0.92) brightness(1.02);
-  }
+:root{
+--moss: #4a7856;
+--moss-dark: #24402c;
+--moss-light: #eef4ee;
+--clay: #d9642b;
+--clay-dark: #b8531f;
+--ink: #1f2b23;
+--paper: #fbfaf7;
+--line: #e4e0d6;
+}
+*{ box-sizing: border-box; }
+html, body{
+margin: 0;
+height: 100%;
+font-family: 'Inter', system-ui, sans-serif;
+background: var(--paper);
+color: var(--ink);
+}
+header{
+background: var(--paper);
+border-bottom: 1px solid var(--line);
+padding: 16px 28px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+flex-wrap: wrap;
+gap: 8px;
+}
+.brand{
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.brand-icon{
+width: 34px;
+height: 34px;
+border-radius: 9px;
+background: var(--moss);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 18px;
+}
+header h1{
+margin: 0;
+font-size: 1.05rem;
+font-weight: 700;
+color: var(--moss-dark);
+letter-spacing: -0.01em;
+}
+header p{
+margin: 0;
+font-size: 0.78rem;
+color: #8a8577;
+}
+#map-wrap{
+position: relative;
+width: 100%;
+height: calc(100vh - 68px);
+}
+#map{
+width: 100%;
+height: 100%;
+background: var(--moss-light) !important;
+}
+.leaflet-tile{
+filter: saturate(0.92) brightness(1.02);
+}
 
-  /* smooth custom pins */
-  .pin{
-    width: 30px;
-    height: 30px;
-    border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.28);
-    border: 2.5px solid white;
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
-    cursor: pointer;
-  }
-  .pin span{
-    transform: rotate(45deg);
-    font-size: 13px;
-  }
-  .pin-wrap:hover .pin{
-    transform: rotate(-45deg) scale(1.14);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.35);
-  }
+/* smooth custom pins */
+.pin{
+width: 30px;
+height: 30px;
+border-radius: 50% 50% 50% 0;
+transform: rotate(-45deg);
+display: flex;
+align-items: center;
+justify-content: center;
+box-shadow: 0 3px 8px rgba(0,0,0,0.28);
+border: 2.5px solid white;
+transition: transform 0.18s ease, box-shadow 0.18s ease;
+cursor: pointer;
+}
+.pin span{
+transform: rotate(45deg);
+font-size: 13px;
+}
+.pin-wrap:hover .pin{
+transform: rotate(-45deg) scale(1.14);
+box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+}
 
-  .leaflet-popup-content-wrapper{
-    background: var(--paper);
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(20,30,20,0.22);
-    padding: 2px;
-  }
-  .leaflet-popup-tip{
-    background: var(--paper);
-  }
-  .leaflet-popup-content{
-    margin: 14px 16px;
-    width: 240px !important;
-  }
-  .popup-org{
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--clay-dark);
-    margin: 0 0 5px 0;
-  }
-  .popup-title{
-    font-size: 1.02rem;
-    font-weight: 700;
-    color: var(--moss-dark);
-    margin: 0 0 10px 0;
-    line-height: 1.25;
-  }
-  .popup-row{
-    font-size: 0.82rem;
-    color: #4b463c;
-    margin: 4px 0;
-    display: flex;
-    gap: 8px;
-  }
-  .popup-row b{
-    color: var(--moss-dark);
-    min-width: 40px;
-    font-weight: 600;
-  }
-  .help-btn{
-    display: block;
-    text-align: center;
-    margin-top: 12px;
-    background: var(--clay);
-    color: white;
-    border: none;
-    padding: 9px 14px;
-    border-radius: 9px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.15s ease, transform 0.1s ease;
-  }
-  .help-btn:hover{
-    background: var(--clay-dark);
-    transform: translateY(-1px);
-  }
+.leaflet-popup-content-wrapper{
+background: var(--paper);
+border-radius: 14px;
+box-shadow: 0 10px 30px rgba(20,30,20,0.22);
+padding: 2px;
+}
+.leaflet-popup-tip{
+background: var(--paper);
+}
+.leaflet-popup-content{
+margin: 14px 16px;
+width: 240px !important;
+}
+.popup-org{
+font-size: 0.65rem;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.07em;
+color: var(--clay-dark);
+margin: 0 0 5px 0;
+}
+.popup-title{
+font-size: 1.02rem;
+font-weight: 700;
+color: var(--moss-dark);
+margin: 0 0 10px 0;
+line-height: 1.25;
+}
+.popup-row{
+font-size: 0.82rem;
+color: #4b463c;
+margin: 4px 0;
+display: flex;
+gap: 8px;
+}
+.popup-row b{
+color: var(--moss-dark);
+min-width: 40px;
+font-weight: 600;
+}
+.help-btn{
+display: block;
+text-align: center;
+margin-top: 12px;
+background: var(--clay);
+color: white;
+border: none;
+padding: 9px 14px;
+border-radius: 9px;
+font-size: 0.85rem;
+font-weight: 700;
+cursor: pointer;
+text-decoration: none;
+transition: background 0.15s ease, transform 0.1s ease;
+}
+.help-btn:hover{
+background: var(--clay-dark);
+transform: translateY(-1px);
+}
+.help-btn.disabled{
+background: #cfc9ba;
+color: #6b6656;
+cursor: not-allowed;
+}
+.help-btn.disabled:hover{
+background: #cfc9ba;
+transform: none;
+}
 
-  .legend{
-    position: absolute;
-    bottom: 22px;
-    left: 16px;
-    z-index: 500;
-    background: rgba(251,250,247,0.94);
-    backdrop-filter: blur(6px);
-    padding: 12px 16px;
-    border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(20,30,20,0.15);
-    font-size: 0.8rem;
-    border: 1px solid var(--line);
-  }
-  .legend-title{
-    font-weight: 700;
-    color: var(--moss-dark);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 6px;
-  }
-  .legend div.row{
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 4px 0;
-    color: #4b463c;
-  }
-  .dot{
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    display: inline-block;
-    box-shadow: 0 0 0 2px white, 0 1px 4px rgba(0,0,0,0.25);
-  }
+.legend{
+position: absolute;
+bottom: 22px;
+left: 16px;
+z-index: 500;
+background: rgba(251,250,247,0.94);
+backdrop-filter: blur(6px);
+padding: 12px 16px;
+border-radius: 12px;
+box-shadow: 0 6px 20px rgba(20,30,20,0.15);
+font-size: 0.8rem;
+border: 1px solid var(--line);
+}
+.legend-title{
+font-weight: 700;
+color: var(--moss-dark);
+font-size: 0.72rem;
+text-transform: uppercase;
+letter-spacing: 0.05em;
+margin-bottom: 6px;
+}
+.legend div.row{
+display: flex;
+align-items: center;
+gap: 8px;
+margin: 4px 0;
+color: #4b463c;
+}
+.dot{
+width: 11px;
+height: 11px;
+border-radius: 50%;
+display: inline-block;
+box-shadow: 0 0 0 2px white, 0 1px 4px rgba(0,0,0,0.25);
+}
 
-  .stat-box{
-    position: absolute;
-    top: 18px;
-    right: 16px;
-    z-index: 500;
-    background: var(--moss-dark);
-    color: var(--paper);
-    padding: 12px 18px;
-    border-radius: 12px;
-    box-shadow: 0 8px 22px rgba(20,30,20,0.3);
-    font-size: 0.8rem;
-    text-align: center;
-    min-width: 160px;
-  }
-  .stat-box .label{
-    opacity: 0.75;
-    font-size: 0.72rem;
-  }
-  .stat-box .big{
-    font-size: 1.7rem;
-    font-weight: 800;
-    color: #ffcb8e;
-    line-height: 1.2;
-  }
+.stat-box{
+position: absolute;
+top: 18px;
+right: 16px;
+z-index: 500;
+background: var(--moss-dark);
+color: var(--paper);
+padding: 12px 18px;
+border-radius: 12px;
+box-shadow: 0 8px 22px rgba(20,30,20,0.3);
+font-size: 0.8rem;
+text-align: center;
+min-width: 160px;
+}
+.stat-box .label{
+opacity: 0.75;
+font-size: 0.72rem;
+}
+.stat-box .big{
+font-size: 1.7rem;
+font-weight: 800;
+color: #ffcb8e;
+line-height: 1.2;
+}
 
-  .leaflet-control-zoom{
-    border: none !important;
-    box-shadow: 0 6px 18px rgba(20,30,20,0.18) !important;
-  }
-  .leaflet-control-zoom a{
-    border-radius: 8px !important;
-    color: var(--moss-dark) !important;
-  }
+.leaflet-control-zoom{
+border: none !important;
+box-shadow: 0 6px 18px rgba(20,30,20,0.18) !important;
+}
+.leaflet-control-zoom a{
+border-radius: 8px !important;
+color: var(--moss-dark) !important;
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">
-    <div class="brand-icon">🌿</div>
-    <div>
-      <h1>Local Environmental Volunteering — Bay Area</h1>
-      <p>Tap a pin to see the opportunity and sign up</p>
-    </div>
-  </div>
+<div class="brand">
+<div class="brand-icon">🌿</div>
+<div>
+<h1>Local Environmental Volunteering — Bay Area</h1>
+<p>Tap a pin to see the opportunity and sign up</p>
+</div>
+</div>
 </header>
 
 <div id="map-wrap">
-  <div id="map"></div>
-  <div class="stat-box">
-    <div class="label">People who clicked "I will help!"</div>
-    <div class="big" id="bookingCount">–</div>
-  </div>
+<div id="map"></div>
+<div class="stat-box">
+<div class="label">People who clicked "I will help!"</div>
+<div class="big" id="bookingCount">–</div>
+</div>
 </div>
 
 <script>
-  // ---- event data now lives in events.json, loaded at runtime ----
-  // This is the file Cowork should overwrite each month — nothing in this
-  // <script> block needs to change for a routine data update.
-  let orgData = [];
+// ---- event data now lives in events.json, loaded at runtime ----
+// This is the file Cowork should overwrite each month -- nothing in this
+// <script> block needs to change for a routine data update.
+let orgData = [];
 
-  async function loadOrgData(){
-    try {
-      const res = await fetch('events.json');
-      if (!res.ok) throw new Error('events.json request failed: ' + res.status);
-      orgData = await res.json();
-    } catch (err) {
-      console.error('Could not load events.json', err);
-      document.getElementById('map-wrap').insertAdjacentHTML(
-        'beforeend',
-        '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);' +
-        'background:#fbfaf7;border:1px solid #e4e0d6;padding:14px 20px;border-radius:10px;' +
-        'font-family:Inter,system-ui,sans-serif;font-size:0.85rem;color:#1f2b23;z-index:1000;">' +
-        'Couldn\'t load event data (events.json). If you opened this file directly, serve it ' +
-        'over a local web server instead of file:// so the fetch works.</div>'
-      );
-    }
-  }
+async function loadOrgData(){
+try {
+const res = await fetch('events.json');
+if (!res.ok) throw new Error('events.json request failed: ' + res.status);
+orgData = await res.json();
+} catch (err) {
+console.error('Could not load events.json', err);
+document.getElementById('map-wrap').insertAdjacentHTML(
+'beforeend',
+'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);' +
+'background:#fbfaf7;border:1px solid #e4e0d6;padding:14px 20px;border-radius:10px;' +
+'font-family:Inter,system-ui,sans-serif;font-size:0.85rem;color:#1f2b23;z-index:1000;">' +
+'Couldn\'t load event data (events.json). If you opened this file directly, serve it ' +
+'over a local web server instead of file:// so the fetch works.</div>'
+);
+}
+}
 
-  // ---- map setup with a smoother, modern basemap ----
-  const map = L.map('map', { scrollWheelZoom: true, zoomControl: true }).setView([37.63, -122.47], 10);
+// ---- map setup with a smoother, modern basemap ----
+const map = L.map('map', { scrollWheelZoom: true, zoomControl: true }).setView([37.63, -122.47], 10);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19
-  }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+attribution: '&copy; OpenStreetMap contributors',
+maxZoom: 19
+}).addTo(map);
 
-  function formatDate(iso){
-    const d = new Date(iso + "T00:00:00");
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
+function formatDate(iso){
+const d = new Date(iso + "T00:00:00");
+return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
-  // ---- shared, persistent booking counter ----
-  async function loadBookingCount(){
-    try{
-      const result = await window.storage.get('total_bookings', true);
-      document.getElementById('bookingCount').textContent = result ? result.value : "0";
-    } catch(e){
-      document.getElementById('bookingCount').textContent = "0";
-    }
-  }
+// Minimal HTML-attribute escaping for values we interpolate into href/title
+// attributes -- everything here comes from our own events.json (itself
+// produced from verify_url()-checked links), but this costs nothing and
+// means a stray quote or angle bracket in a title/URL can never break the
+// markup or open an injection path.
+function escapeAttr(str){
+return String(str)
+.replace(/&/g, '&amp;')
+.replace(/"/g, '&quot;')
+.replace(/'/g, '&#39;')
+.replace(/</g, '&lt;')
+.replace(/>/g, '&gt;');
+}
 
-  async function recordBooking(eventName){
-    try{
-      let current = 0;
-      try{
-        const existing = await window.storage.get('total_bookings', true);
-        current = existing ? parseInt(existing.value, 10) : 0;
-      } catch(e){ current = 0; }
-      const updated = current + 1;
-      await window.storage.set('total_bookings', String(updated), true);
-      document.getElementById('bookingCount').textContent = updated;
+// ---- shared, persistent booking counter ----
+async function loadBookingCount(){
+try{
+const result = await window.storage.get('total_bookings', true);
+document.getElementById('bookingCount').textContent = result ? result.value : "0";
+} catch(e){
+document.getElementById('bookingCount').textContent = "0";
+}
+}
 
-      const key = 'event_clicks:' + eventName.replace(/\s+/g, '_').toLowerCase();
-      let eventCount = 0;
-      try{
-        const existingEvent = await window.storage.get(key, true);
-        eventCount = existingEvent ? parseInt(existingEvent.value, 10) : 0;
-      } catch(e){ eventCount = 0; }
-      await window.storage.set(key, String(eventCount + 1), true);
-    } catch(e){
-      console.error('Booking storage error:', e);
-    }
-  }
+async function recordBooking(eventName){
+try{
+let current = 0;
+try{
+const existing = await window.storage.get('total_bookings', true);
+current = existing ? parseInt(existing.value, 10) : 0;
+} catch(e){ current = 0; }
+const updated = current + 1;
+await window.storage.set('total_bookings', String(updated), true);
+document.getElementById('bookingCount').textContent = updated;
 
-  function plotMarkers(){
-    orgData.forEach(orgGroup => {
-      orgGroup.events.forEach(ev => {
-        const icon = L.divIcon({
-          className: 'pin-wrap',
-          html: `<div class="pin" style="background:${orgGroup.color}"><span>🌱</span></div>`,
-          iconSize: [30, 30],
-          iconAnchor: [15, 28],
-          popupAnchor: [0, -26]
-        });
+const key = 'event_clicks:' + eventName.replace(/\s+/g, '_').toLowerCase();
+let eventCount = 0;
+try{
+const existingEvent = await window.storage.get(key, true);
+eventCount = existingEvent ? parseInt(existingEvent.value, 10) : 0;
+} catch(e){ eventCount = 0; }
+await window.storage.set(key, String(eventCount + 1), true);
+} catch(e){
+console.error('Booking storage error:', e);
+}
+}
 
-        const marker = L.marker([ev.lat, ev.lng], { icon }).addTo(map);
+function plotMarkers(){
+orgData.forEach(orgGroup => {
+orgGroup.events.forEach(ev => {
+const icon = L.divIcon({
+className: 'pin-wrap',
+html: `<div class="pin" style="background:${orgGroup.color}"><span>🌱</span></div>`,
+iconSize: [30, 30],
+iconAnchor: [15, 28],
+popupAnchor: [0, -26]
+});
 
-        const timeStr = ev.end ? `${ev.start} - ${ev.end}` : ev.start;
+const marker = L.marker([ev.lat, ev.lng], { icon }).addTo(map);
 
-        const popupHtml = `
-          <p class="popup-org">${orgGroup.org}</p>
-          <p class="popup-title">${ev.name}</p>
-          <div class="popup-row"><b>Date</b> ${ev.day}, ${formatDate(ev.date)}</div>
-          <div class="popup-row"><b>Time</b> ${timeStr}</div>
-          <div class="popup-row"><b>Where</b> ${ev.location}</div>
-          <a class="help-btn" href="#" onclick="recordBooking('${ev.name.replace(/'/g, "\\'")}'); alert('Thanks! This would now send you to the ${orgGroup.org} booking page.'); return false;">I will help! →</a>
-        `;
+const timeStr = ev.end ? `${ev.start} - ${ev.end}` : ev.start;
 
-        marker.bindPopup(popupHtml, { closeButton: false });
-      });
-    });
-  }
+// The whole point of this map is that each pin sends a volunteer to a
+// REAL sign-up page. Prefer this event's own bookingUrl; if this org
+// only has a general page (no event-specific link was found), fall
+// back to its orgUrl. Only if neither exists do we show a disabled
+// button rather than a dead "#" link that silently goes nowhere.
+const signupUrl = ev.bookingUrl || orgGroup.orgUrl || null;
+const helpButtonHtml = signupUrl
+? `<a class="help-btn" href="${escapeAttr(signupUrl)}" target="_blank" rel="noopener noreferrer" onclick="recordBooking('${ev.name.replace(/'/g, "\\'")}')">I will help! →</a>`
+: `<span class="help-btn disabled" title="No sign-up link found yet for this event -- check the organization's site directly">Sign-up link coming soon</span>`;
 
-  function addLegend(){
-    const legend = L.control({ position: 'bottomleft' });
-    legend.onAdd = function () {
-      const div = L.DomUtil.create('div', 'legend');
-      const rows = orgData.map(orgGroup =>
-        `<div class="row"><span class="dot" style="background:${orgGroup.color}"></span> ${orgGroup.org}</div>`
-      ).join('');
-      div.innerHTML = `<div class="legend-title">Organizations</div>${rows}`;
-      return div;
-    };
-    legend.addTo(map);
-  }
+const popupHtml = `
+<p class="popup-org">${orgGroup.org}</p>
+<p class="popup-title">${ev.name}</p>
+<div class="popup-row"><b>Date</b> ${ev.day}, ${formatDate(ev.date)}</div>
+<div class="popup-row"><b>Time</b> ${timeStr}</div>
+<div class="popup-row"><b>Where</b> ${ev.location}</div>
+${helpButtonHtml}
+`;
 
-  async function init(){
-    await loadOrgData();
-    if (orgData.length) {
-      plotMarkers();
-      addLegend();
-    }
-    loadBookingCount();
-  }
+marker.bindPopup(popupHtml, { closeButton: false });
+});
+});
+}
 
-  init();
+function addLegend(){
+const legend = L.control({ position: 'bottomleft' });
+legend.onAdd = function () {
+const div = L.DomUtil.create('div', 'legend');
+const rows = orgData.map(orgGroup =>
+`<div class="row"><span class="dot" style="background:${orgGroup.color}"></span> ${orgGroup.org}</div>`
+).join('');
+div.innerHTML = `<div class="legend-title">Organizations</div>${rows}`;
+return div;
+};
+legend.addTo(map);
+}
+
+async function init(){
+await loadOrgData();
+if (orgData.length) {
+plotMarkers();
+addLegend();
+}
+loadBookingCount();
+}
+
+init();
 </script>
 
 </body>
