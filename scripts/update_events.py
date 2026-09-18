@@ -382,11 +382,10 @@ ORGS = [
         "color": "#d9642b",
         "kind": "google_calendar",
         "calendar_page": "https://www.pacificbeachcoalition.org/calendar-2026/",
-        # This page also has a static table mapping each recurring cleanup site
-        # to its own Google Form sign-up link -- fetched from the same page and
-        # handed to Claude alongside the calendar so it can match site name to
-        # the right form link.
-        "has_site_form_table": True,
+        # This org used to also send the calendar page's raw HTML as extra
+        # context, to match each event to a per-site sign-up form link --
+        # removed 2026-09-18 (see CHANGELOG) after it was root-caused as the
+        # reason this org's extraction kept coming back with 0 events.
     },
     {
         "org": "Save The Bay",
@@ -925,17 +924,26 @@ def process_google_calendar_org(client, org_cfg):
         log(f"  ! iCal export failed for this calendar ({e}) -- falling back to its agenda view")
         source_text = render_google_calendar_agenda(cal_id)
 
-    extra_context = ""
-    if org_cfg.get("has_site_form_table"):
-        extra_context = (
-            "The following is the full page HTML, which (in addition to the calendar) may contain "
-            "a table mapping each recurring cleanup/restoration site name to its own volunteer "
-            "sign-up form link (e.g. a Google Form). Use it to fill in bookingUrl by matching site "
-            "names to the calendar's event locations.\n\n--- PAGE HTML (for site->form matching) ---\n"
-            + page_html[:60000]
-        )
-
-    raw_events = claude_extract_events(client, org_cfg["org"], source_text, extra_context)
+    # 2026-09-18c: `has_site_form_table` used to append up to 60,000 chars of
+    # the calendar page's raw HTML as extra_context, so Claude could match
+    # each event to a per-site sign-up form link. Root-caused (from run #11's
+    # log) as the actual cause of Pacific Beach Coalition repeatedly
+    # extracting 0 events even from agenda text confirmed -- by directly
+    # reading the logged 500-char preview -- to contain real events (Calera
+    # Creek Habitat Restoration, a real time, a real maps link). PBC is the
+    # ONLY org that ever set this flag, and the ONLY org that failed twice in
+    # a row (even with the new retry) in that same run while every other org
+    # extracted fine -- that's too specific a correlation to ignore. Dumping
+    # 60,000 mostly-irrelevant characters (nav/footer/scripts) of raw,
+    # unrendered HTML alongside ~4,800 characters of real agenda text was
+    # apparently enough to derail the extraction entirely. Dropped this
+    # feature rather than trying to shrink or reformat it under time
+    # pressure -- the agenda text alone already carries real per-event links
+    # when the source page has them (confirmed in that same log preview: a
+    # maps.app.goo.gl link sitting right under "Calera Creek Habitat
+    # Restoration"), so this wasn't pulling its weight against the risk of
+    # silently zeroing out the whole org.
+    raw_events = claude_extract_events(client, org_cfg["org"], source_text)
     log(f"  Claude extracted {len(raw_events)} raw event(s) (before date filtering/geocoding)")
     return raw_events
 
