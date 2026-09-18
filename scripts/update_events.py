@@ -244,6 +244,91 @@ CHANGELOG:
                   get tried, just after the now-earlier fallbacks that would
                   fail for them anyway) and re-ran a full mocked dry run of
                   main() end to end before shipping.
+  2026-09-18  Paul re-ran with the above fixes applied and reported three
+              more things: Grassroots Ecology events still have no
+              "I will help!" link at all (he pointed at
+              grassrootsecology.org/calendar -> click a date -> click an
+              event -> lands on a page like .../event-calendar/2026/09/19/
+              coastal-cleanup-day-redwood-city, and asked for exactly that);
+              the Save The Bay Hayward event's date/link still looked wrong;
+              and some Sept 19 events seemed to be missing from the map
+              entirely.
+                - Checked the live map data directly: as of this run, all 5
+                  of Grassroots Ecology's actual Sept 19 events (and both
+                  Sept 20 ones) ARE present and correctly geocoded -- the
+                  "missing events" report was almost certainly from an
+                  earlier state (before this run, or before a browser
+                  refresh); nothing further to fix there.
+                - Root-caused the missing Grassroots Ecology bookingUrls:
+                  process_html_listing_org() fetched each event's own detail
+                  page but blended ALL of them into one combined block of
+                  text and asked Claude to extract every event AND match
+                  each one back to the right source URL in a single call.
+                  That inference apparently works for Save The Bay but
+                  wasn't landing for Grassroots Ecology. Rewrote it to call
+                  Claude once PER detail page instead (confirmed live: each
+                  event has its own page, e.g. exactly the Redwood City URL
+                  Paul linked, with its own "Register Here" button), then
+                  set that event's bookingUrl to the page's own URL
+                  programmatically afterward -- not inferred by the model at
+                  all, so it can't be wrong. This is also just what Paul
+                  described wanting: the button now goes to that same
+                  "volunteer tab" he clicks through to by hand. Applies to
+                  both html_listing orgs (Save The Bay too), so both are now
+                  equally reliable instead of one working by luck.
+                - Investigated the Hayward date claim directly: the map's
+                  data (from a run several days earlier) says Sept 19; the
+                  live savesfbay.org page for that same event now says
+                  October 3. Checked the OTHER Save The Bay event (MLK
+                  Regional Shoreline) as a control -- it still correctly
+                  says Sept 19, unchanged -- so this isn't a systemic
+                  scraping bug or a caching issue, it's that Save The Bay
+                  itself changed/rescheduled specifically the Hayward
+                  event's date sometime after our last scrape ran. Nothing
+                  in our pipeline was wrong at the time it ran; the fix is
+                  just to re-run and pick up their current listing (which
+                  this changelog's other fixes make worth doing anyway).
+                  The "brings me to the same page as the coastal MLK one"
+                  part: both event pages legitimately list each other as
+                  related events in their own footer ("Invasive Plant Pull
+                  at Ravenswood...", "Habitat Restoration at Eden Landing...")
+                  -- that's savesfbay.org's own related-events nav, not a
+                  bug in our bookingUrl.
+                - Re-ran a full mocked dry run of main() end to end
+                  (including the new per-detail-page extraction path) before
+                  sending, confirming bookingUrl is set correctly per event
+                  and nothing crashes.
+  2026-09-18b Paul clarified the "missing Sept 19 events" from earlier the
+              same day were about Pacific Beach Coalition specifically, not
+              Grassroots Ecology -- and indeed, run #10 (the first real run
+              with the domcontentloaded fix from earlier today) still came
+              back with 0 PBC events. Read that run's actual log: this time
+              there was no timeout at all -- "agenda view rendered 4841
+              chars of text after waiting for it to stabilize", the exact
+              same char count as run #7's log, which is confirmed (from
+              that same run's own log) to have extracted 30 real events from
+              what was the same real calendar content. Live-reloaded the
+              actual PBC agenda URL directly in a browser just now and
+              confirmed it currently renders ~4900 chars of real event text
+              (Calera Creek, Esplanade, Foster City, Montara Beach, Mussel
+              Rock, ...), not an empty/header-only page. So the page was
+              almost certainly rendered correctly both times, and Claude's
+              own extraction call came back with 0 events on this one run
+              for no code-level reason -- nothing in claude_extract_events()
+              or its caller changed between run #7 and run #10. Rather than
+              chase a single non-reproducible bad response further, added a
+              pragmatic safety net: claude_extract_events() now retries once
+              (a fresh, independent API call) whenever the FIRST attempt
+              returns 0 events from a substantial amount of source text
+              (>=800 chars -- short/empty pages still correctly return 0
+              without wasting a retry), and logs 500 chars of the source
+              text (not just 200) whenever that happens, so if this ever
+              turns out to be a *repeatable* content/prompt problem rather
+              than a one-off miss, the next log has enough in it to diagnose
+              without this much run-archaeology. Verified with dedicated
+              unit tests (recovers on a one-off miss, doesn't retry for
+              short text, retries exactly once and gives up on a persistent
+              failure) plus a full mocked dry run of main() end to end.
 """
 
 import json
@@ -579,9 +664,9 @@ def render_google_calendar_agenda(calendar_id):
             browser.close()
 
 
-def claude_extract_events(client, org_name, source_text, extra_context=""):
-    """One Claude call, forced through the record_events tool, returns a list of
-    raw event dicts (name/date/start/end/location/bookingUrl) -- no lat/lng yet."""
+def _claude_extract_events_once(client, org_name, source_text, extra_context=""):
+    """A single extraction attempt -- see claude_extract_events() for the
+    retry wrapper around this."""
     today_str = date.today().isoformat()
     system = EXTRACTION_SYSTEM_PROMPT.format(today=today_str)
     # Keep prompts within a sane size; truncate very long source dumps.
@@ -621,6 +706,48 @@ def claude_extract_events(client, org_name, source_text, extra_context=""):
                     f"{'y' if len(raw) - len(valid) == 1 else 'ies'} out of {len(raw)} -- dropped, kept {len(valid)}")
             return valid
     return []
+
+
+# Source text shorter than this is plausibly just a header/empty-state with
+# genuinely nothing to extract -- not worth a retry. Above it, a 0-event
+# result is suspicious enough to be worth a second, independent attempt.
+_EXTRACTION_RETRY_MIN_SOURCE_CHARS = 800
+
+
+def claude_extract_events(client, org_name, source_text, extra_context=""):
+    """One (or, if it looks suspicious, two) Claude call(s), forced through
+    the record_events tool, returning a list of raw event dicts
+    (name/date/start/end/location/bookingUrl) -- no lat/lng yet.
+
+    2026-09-18: run #10's log showed Pacific Beach Coalition's agenda view
+    rendering fine -- 4841 chars, the exact same size as run #7's, which DID
+    extract 30 events from what was confirmed to be the same real calendar
+    content -- yet this run's extraction came back with 0 raw events. Since
+    nothing in this function or its caller changed between those two runs,
+    and the source text was substantively the same real content both times,
+    the most likely explanation is a one-off miss in the model's own
+    response for that call, not a structural bug -- these are inherently a
+    little stochastic, and a forced tool call can occasionally come back
+    genuinely (if incorrectly) empty. Rather than trying to root-cause a
+    single non-reproducible bad response further, treat "0 events from a
+    substantial amount of source text" as suspicious enough to retry once,
+    the same way the PBC page-load timeout gets one retry -- cheap
+    insurance against a whole org silently coming back empty for a week
+    over what was probably just a bad roll. Also log more than the previous
+    200-char preview when this happens, so a *repeat* failure (a real
+    content/prompt problem, not a fluke) is diagnosable from the log alone
+    next time instead of requiring this level of run-log archaeology again.
+    """
+    events = _claude_extract_events_once(client, org_name, source_text, extra_context)
+    if not events and len(source_text) >= _EXTRACTION_RETRY_MIN_SOURCE_CHARS:
+        log(f"  ! extraction returned 0 events from {len(source_text)} chars of source text "
+            f"for {org_name} -- retrying once in case that was a one-off miss "
+            f"(source text starts: {source_text[:500]!r})")
+        events = _claude_extract_events_once(client, org_name, source_text, extra_context)
+        if not events:
+            log(f"  ! retry also returned 0 events for {org_name} -- likely a real "
+                f"content/prompt issue this time, not a fluke")
+    return events
 
 
 def compute_day_name(date_str):
@@ -876,17 +1003,58 @@ def process_html_listing_org(client, org_cfg):
 
     log(f"  found {len(detail_urls)} detail page(s)")
 
-    combined = f"--- LISTING PAGE ({org_cfg['listing_page']}) ---\n{listing_html[:20000]}\n"
+    if not detail_urls:
+        # No detail pages at all -- fall back to extracting straight from the
+        # listing page's own text so a broken detail-link pattern degrades to
+        # "no bookingUrl" rather than "no events".
+        raw_events = claude_extract_events(
+            client, org_cfg["org"], f"--- LISTING PAGE ({org_cfg['listing_page']}) ---\n{listing_html[:20000]}\n"
+        )
+        log(f"  Claude extracted {len(raw_events)} raw event(s) from the listing page alone "
+            f"(before date filtering/geocoding)")
+        return raw_events
+
+    # One Claude call PER detail page rather than one call across all of them
+    # combined. Paul reported (2026-09-18) that Grassroots Ecology's events
+    # were coming through with no bookingUrl at all, unlike Save The Bay's --
+    # the difference: when every detail page's text is blended into a single
+    # blob and Claude is asked to extract every event at once, matching each
+    # event back to the one URL among several that it actually came from is
+    # an inference Claude has to get right on its own, and evidently wasn't
+    # for this org. Processing one page at a time removes that inference
+    # entirely: whatever event(s) come out of THIS call can only have come
+    # from THIS url, so bookingUrl is set programmatically afterward, not
+    # trusted from the model's own output. This also directly delivers what
+    # Paul asked for -- each event's "I will help!" button goes to that
+    # event's own page on the org's site (e.g.
+    # https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-
+    # cleanup-day-redwood-city), the same "volunteer tab" he described
+    # clicking through to by hand.
+    raw_events = []
     for url in detail_urls:
         try:
             detail_html = http_get(url)
-            combined += f"\n--- DETAIL PAGE ({url}) ---\n{detail_html[:6000]}\n"
         except Exception as e:
             log(f"  ! failed to fetch detail page {url}: {e}")
+            continue
+        source_text = (
+            f"--- LISTING PAGE ({org_cfg['listing_page']}), for date/context only ---\n"
+            f"{listing_html[:8000]}\n"
+            f"\n--- DETAIL PAGE ({url}) -- this describes exactly ONE event ---\n"
+            f"{detail_html[:8000]}\n"
+        )
+        try:
+            page_events = claude_extract_events(client, org_cfg["org"], source_text)
+        except Exception as e:
+            log(f"  ! Claude extraction failed for detail page {url}: {e}")
+            continue
+        for ev in page_events:
+            if isinstance(ev, dict):
+                ev["bookingUrl"] = url
+        raw_events.extend(page_events)
 
-    raw_events = claude_extract_events(client, org_cfg["org"], combined)
-    log(f"  Claude extracted {len(raw_events)} raw event(s) from {len(combined)} chars of source text "
-        f"(before date filtering/geocoding)")
+    log(f"  Claude extracted {len(raw_events)} raw event(s) from {len(detail_urls)} detail page(s), "
+        f"one call per page (before date filtering/geocoding)")
     return raw_events
 
 
