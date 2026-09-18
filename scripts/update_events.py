@@ -189,6 +189,61 @@ CHANGELOG:
               run, all at once) confirming nothing crashes and every
               previously-working path (LOCATION_OVERRIDES, already-good
               addresses) is unaffected.
+  2026-09-17  Paul reported three things after a week of runs (#8 manual,
+              #9 scheduled) had gone by since the last fix: Pacific Beach
+              Coalition empty again, "dates aren't right on a lot of the
+              links", and a Save The Bay Hayward event dated Oct 3rd linking
+              to the same page as the MLK Coastal Cleanup event. Read run
+              #9's actual log (not a guess) to root-cause each:
+                - Pacific Beach Coalition: the agenda-view render is now
+                  failing with "Page.goto: Timeout 45000ms exceeded" while
+                  waiting for "networkidle" -- it worked in run #7 (30 raw
+                  events) with the exact same code, so this isn't broken
+                  logic, it's an unreliable wait condition: Google
+                  Calendar's agenda view apparently keeps some background
+                  connection open, so "no network activity for 500ms" can
+                  simply never happen even once the page has fully loaded.
+                  Switched render_google_calendar_agenda()'s page.goto() to
+                  wait_until="domcontentloaded" instead (the existing
+                  poll-until-the-text-stops-growing loop right after it
+                  already handles waiting for the JS-rendered list itself,
+                  so it doesn't depend on networkidle at all), bumped the
+                  timeout to 60s for margin, and added one retry with a
+                  fresh page before giving up.
+                - "Dates aren't right" / the Save The Bay Oct 3rd + duplicate
+                  link report: does NOT match what's actually in the live
+                  events.json (2 Save The Bay events, both 9/19, two
+                  different bookingUrls) or what run #9's log shows it wrote.
+                  index.html's fetch('events.json') had no cache-busting at
+                  all, so a browser (or the GitHub Pages CDN) serving a
+                  stale copy is the far more likely explanation than a data
+                  bug -- added a timestamp query param and cache: 'no-store'
+                  so a visitor always gets the current file.
+                - Also found, independently, while reading run #9's log: a
+                  genuinely wrong pin. "1400 Broadway St, Redwood City, CA
+                  94063" (a real Grassroots Ecology event) geocoded to
+                  (34.0228, -118.4839) -- Los Angeles, not Redwood City. The
+                  log showed why: the full address returns zero Nominatim
+                  results (live-verified, even with ", USA" appended), so it
+                  fell through to the "venue name only" fallback, which for
+                  THIS address is just the bare street number+name with no
+                  city ("1400 Broadway St, CA, USA") -- and that resolves,
+                  successfully but wrongly, to a different Broadway St in
+                  Santa Monica. A wrong-but-successful geocode is worse than
+                  a failed one, since nothing downstream flags it. Live
+                  Nominatim checks confirmed "Redwood City, CA 94063, USA"
+                  (the last-2-segments fallback) resolves correctly.
+                  Reordered _build_geocode_attempts() so the
+                  city-preserving fallbacks (last 3 / last 2 segments) are
+                  tried before "venue name only", and skip "venue name only"
+                  entirely whenever the first comma-segment starts with a
+                  digit -- a real venue name never does, and a bare street
+                  number+name is too ambiguous to geocode without its city.
+                  Re-verified this doesn't regress the run #7 PBC addresses
+                  (their venue names don't start with digits, so they still
+                  get tried, just after the now-earlier fallbacks that would
+                  fail for them anyway) and re-ran a full mocked dry run of
+                  main() end to end before shipping.
 """
 
 import json
@@ -430,60 +485,96 @@ def render_google_calendar_agenda(calendar_id):
     from urllib.parse import quote
     from playwright.sync_api import sync_playwright
 
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
     url = f"https://calendar.google.com/calendar/embed?src={quote(calendar_id)}&mode=AGENDA"
     log("  (this calendar's public iCal export is unavailable -- rendering its agenda view instead)")
     with sync_playwright() as p:
         browser = p.chromium.launch()
         try:
-            # A generic bot user-agent is fine for a plain HTML fetch, but
-            # Google Calendar's own front end is a full JS app that reads the
-            # user-agent -- give it a normal desktop Chrome UA and a normal
-            # desktop viewport so it renders the same rich agenda list a real
-            # visitor would get, not a degraded/minimal fallback.
-            page = browser.new_page(
-                user_agent=(
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-                ),
-                viewport={"width": 1400, "height": 1000},
-            )
-            page.goto(url, timeout=45000, wait_until="networkidle")
-            # A completely fresh, cookie-less browser (which is what a CI
-            # runner always is) sometimes gets Google's "Before you continue"
-            # consent interstitial instead of the calendar itself. Click past
-            # it if present -- harmless no-op when it isn't.
-            for label in ["Accept all", "I agree", "Accept"]:
+            # Run #9's log showed this failing outright with "Page.goto:
+            # Timeout 45000ms exceeded" waiting for "networkidle" -- Google
+            # Calendar's agenda view keeps some background connection alive
+            # (long-poll/analytics/etc.), so "networkidle" (no network
+            # activity for 500ms) can simply never be reached, even though
+            # the page itself has fully rendered. Run #7's own log proves the
+            # page loads fine well within 45s when it isn't waiting on that:
+            # it captured 4841 stable chars of agenda text. Switch to
+            # "domcontentloaded" (fires as soon as the DOM itself is parsed,
+            # regardless of any lingering background network activity) and
+            # lean on the polling-until-stable loop below -- which already
+            # exists specifically to wait for the JS-rendered agenda list to
+            # finish filling in -- to determine when the page is actually
+            # ready, instead of an unreliable network-idle signal.
+            #
+            # Belt-and-suspenders: also retry the whole load once (fresh
+            # page) if it still times out, since a CI runner's network can
+            # just be having a bad moment -- one retry is cheap next to a
+            # whole org silently coming back empty for a week.
+            last_error = None
+            for attempt in (1, 2):
+                page = browser.new_page(
+                    # A generic bot user-agent is fine for a plain HTML
+                    # fetch, but Google Calendar's own front end is a full
+                    # JS app that reads the user-agent -- give it a normal
+                    # desktop Chrome UA and viewport so it renders the same
+                    # rich agenda list a real visitor would get, not a
+                    # degraded/minimal fallback.
+                    user_agent=(
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                    ),
+                    viewport={"width": 1400, "height": 1000},
+                )
                 try:
-                    btn = page.get_by_role("button", name=label, exact=False)
-                    if btn.count() > 0:
-                        btn.first.click(timeout=3000)
-                        page.wait_for_timeout(1500)
-                        break
-                except Exception:
-                    pass
-            # The agenda list itself renders progressively via JS/XHR after
-            # "networkidle" -- run #4 confirmed this is real: the page loaded
-            # (no consent wall, no error), but a single fixed 2s pause after
-            # load only ever captured the header plus the very first entry
-            # (5390 chars) instead of the multi-week list a human sees. Poll
-            # until the visible text stops growing instead of guessing a
-            # fixed delay.
-            previous_len = -1
-            stable_checks = 0
-            for _ in range(20):  # up to ~20s total
-                page.wait_for_timeout(1000)
-                current_text = page.inner_text("body")
-                if len(current_text) == previous_len:
-                    stable_checks += 1
-                    if stable_checks >= 2:
-                        break
-                else:
-                    stable_checks = 0
-                previous_len = len(current_text)
-            body_text = page.inner_text("body")
-            log(f"  agenda view rendered {len(body_text)} chars of text after waiting for it to "
-                f"stabilize (first 200: {body_text[:200]!r})")
-            return body_text
+                    page.goto(url, timeout=60000, wait_until="domcontentloaded")
+                except PlaywrightTimeoutError as e:
+                    last_error = e
+                    log(f"  ! agenda view load attempt {attempt} timed out: {e}")
+                    page.close()
+                    if attempt == 2:
+                        raise
+                    continue
+                # A completely fresh, cookie-less browser (which is what a
+                # CI runner always is) sometimes gets Google's "Before you
+                # continue" consent interstitial instead of the calendar
+                # itself. Click past it if present -- harmless no-op when
+                # it isn't.
+                for label in ["Accept all", "I agree", "Accept"]:
+                    try:
+                        btn = page.get_by_role("button", name=label, exact=False)
+                        if btn.count() > 0:
+                            btn.first.click(timeout=3000)
+                            page.wait_for_timeout(1500)
+                            break
+                    except Exception:
+                        pass
+                # The agenda list itself renders progressively via JS/XHR
+                # after the page loads -- run #4 confirmed this is real: the
+                # page loaded (no consent wall, no error), but a single
+                # fixed 2s pause after load only ever captured the header
+                # plus the very first entry (5390 chars) instead of the
+                # multi-week list a human sees. Poll until the visible text
+                # stops growing instead of guessing a fixed delay.
+                previous_len = -1
+                stable_checks = 0
+                for _ in range(20):  # up to ~20s total
+                    page.wait_for_timeout(1000)
+                    current_text = page.inner_text("body")
+                    if len(current_text) == previous_len:
+                        stable_checks += 1
+                        if stable_checks >= 2:
+                            break
+                    else:
+                        stable_checks = 0
+                    previous_len = len(current_text)
+                body_text = page.inner_text("body")
+                log(f"  agenda view rendered {len(body_text)} chars of text after waiting for it to "
+                    f"stabilize (first 200: {body_text[:200]!r})")
+                return body_text
+            # Unreachable (the loop above always returns or raises), but
+            # keeps this function's control flow obviously exhaustive.
+            raise last_error
         finally:
             browser.close()
 
@@ -594,20 +685,37 @@ def _build_geocode_attempts(location_text):
     parts = [p.strip() for p in location_text.split(",") if p.strip()]
 
     if len(parts) > 1:
-        # Venue name alone (first segment) + state -- catches corrupted or
-        # overly-specific addresses where the place name itself is what's
-        # actually in the map database.
-        attempts.append(("venue name only", f"{parts[0]}, CA, USA"))
-
-        # Last 3 segments -- catches "<city>, <state> <zip>, USA" shapes
-        # where the last-2 fallback below would drop the city and keep only
-        # the state/zip.
+        # Last 3 segments -- catches "<street>, <city>, <state> <zip>, USA"
+        # shapes where the last-2 fallback below would drop the city and
+        # keep only the state/zip.
         if len(parts) > 2:
             attempts.append(("last 3 segments", with_usa(", ".join(parts[-3:]))))
 
-        # Last 2 segments (the original fallback) -- typically "<city>,
-        # <state>", the broadest attempt, tried last.
+        # Last 2 segments -- typically "<city>, <state>". Tried before
+        # "venue name only" below: this still keeps the city, which matters
+        # a lot -- see the Redwood City incident in the note below.
         attempts.append(("last 2 segments", with_usa(", ".join(parts[-2:]))))
+
+        # Venue name alone (first segment) + state -- catches corrupted or
+        # overly-specific addresses where the place name itself is what's
+        # actually in the map database (e.g. "Pacifica State Beach, CA").
+        # Run #9's log caught why this can't be tried before the
+        # city-preserving fallbacks above, and why it must be skipped
+        # entirely when the first segment is a numbered street address
+        # rather than an actual place name: for "1400 Broadway St, Redwood
+        # City, CA 94063", "1400 Broadway St, CA, USA" doesn't fail -- it
+        # resolves to a DIFFERENT, wrong Broadway St in Santa Monica/LA
+        # (34.0228, -118.4839), silently. A wrong-but-successful geocode is
+        # worse than a failed one, since nothing downstream flags it. Live
+        # Nominatim checks confirmed: the full address (even with ", USA"
+        # appended) returns zero results for that address, but "Redwood
+        # City, CA 94063, USA" (the last-2-segments attempt) correctly
+        # resolves to Redwood City. So: only offer "venue name only" when
+        # the first segment doesn't start with a digit -- a real venue name
+        # never does, and a bare street number+name is too ambiguous to
+        # geocode without its city.
+        if not re.match(r"^\d", parts[0]):
+            attempts.append(("venue name only", f"{parts[0]}, CA, USA"))
 
     # De-duplicate (case-insensitive) while preserving order -- short
     # addresses can make several of the above identical.
