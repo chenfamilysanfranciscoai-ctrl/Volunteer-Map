@@ -43,6 +43,12 @@ jobs:
       - name: Run event updater
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Optional -- see README. When this secret is set, Surfrider's and
+          # Pacific Beach Coalition's calendars are read straight from
+          # Google's own Calendar API instead of the older AI-extraction
+          # pipeline. Safe to leave unset: those two orgs just fall back to
+          # the older pipeline until it's added.
+          GOOGLE_CALENDAR_API_KEY: ${{ secrets.GOOGLE_CALENDAR_API_KEY }}
         run: python scripts/update_events.py
 
       - name: Commit and push events.json if it changed
