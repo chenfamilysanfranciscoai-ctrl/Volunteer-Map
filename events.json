@@ -43,285 +43,243 @@
     "color": "#d9642b",
     "events": [
       {
-        "name": "Calera Creek Habitat Restoration",
+        "name": "Thornton Vista Cleanup and Habitat Restoration",
         "date": "2026-09-19",
         "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.6079,
-        "lng": -122.4651,
-        "location": "Calera Creek, Pacifica, CA",
-        "bookingUrl": "https://maps.app.goo.gl/ijY7ZCiLaD5NQEgg8"
+        "start": "9:00 AM",
+        "end": "11:00 AM",
+        "lat": 37.6905,
+        "lng": -122.4727,
+        "location": "Thornton State Beach, Thornton Beach Rd, Daly City, CA 94015, USA",
+        "bookingUrl": "https://forms.gle/jef9Tpktjv45pH3o8"
+      },
+      {
+        "name": "Montara Beach cleanup",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
+        "lat": 37.5422,
+        "lng": -122.5161,
+        "location": "Montara Beach, Montara, CA 94019, USA",
+        "bookingUrl": "https://forms.gle/WXvL7C1cabkv1Mwa6"
+      },
+      {
+        "name": "San Pedro Creek Cleanup",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
+        "lat": 37.5891,
+        "lng": -122.5004,
+        "location": "751 San Pedro Terrace Rd, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/W7kpEMmBVYPkyNd8A"
+      },
+      {
+        "name": "Sharp Park Beach Cleanup",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
+        "lat": 37.598,
+        "lng": -122.4995,
+        "location": "Sharp Park Beach, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/DPXZuNBgAG9Xffyx7"
+      },
+      {
+        "name": "Rockaway Beach Cleanup",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
+        "lat": 37.6085,
+        "lng": -122.4953,
+        "location": "Rockaway Beach, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/rAA3XkG5rhDKERMS9"
       },
       {
         "name": "Esplanade Beach Cleanup",
         "date": "2026-09-19",
         "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.598,
         "lng": -122.4995,
-        "location": "Esplanade Avenue, Esplanade Ave, Pacifica, CA 94044, USA"
-      },
-      {
-        "name": "Foster City Cleanup",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.56,
-        "lng": -122.2689,
-        "location": "Foster City, CA"
-      },
-      {
-        "name": "Montara Beach cleanup",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.5422,
-        "lng": -122.5161,
-        "location": "Montara Beach, Montara, CA 94019, USA"
-      },
-      {
-        "name": "Mussel Rock Beach Cleanup",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.598,
-        "lng": -122.4995,
-        "location": "Mussel Rock Beach, Pacifica, CA"
+        "location": "Esplanade Avenue, Esplanade Ave, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/w1sjw7buzUmxkAJD6"
       },
       {
         "name": "Pacifica State Beach Cleanup",
         "date": "2026-09-19",
         "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.6006,
         "lng": -122.5001,
-        "location": "Pacifica State Beach, 1416 9th St, California 95814, United States"
+        "location": "Pacifica State Beach, 1416 9th St, California 95814, United States",
+        "bookingUrl": "https://forms.gle/7a9NrKTB72X4EPAAA"
       },
       {
-        "name": "Rockaway Beach Cleanup",
+        "name": "\ud83c\udf0a CA Coastal Cleanup Day",
         "date": "2026-09-19",
         "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.6085,
-        "lng": -122.4953,
-        "location": "Rockaway Beach, Pacifica, CA 94044, USA"
-      },
-      {
-        "name": "San Pedro Creek Cleanup",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.5891,
-        "lng": -122.5004,
-        "location": "751 San Pedro Terrace Rd, Pacifica, CA 94044, USA"
-      },
-      {
-        "name": "Sharp Park Beach Cleanup",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
+        "start": "All day",
+        "end": null,
         "lat": 37.598,
         "lng": -122.4995,
-        "location": "Sharp Park Beach, Pacifica, CA 94044, USA"
+        "location": "Pacifica, CA"
       },
       {
-        "name": "Thornton Vista Cleanup and Habitat Restoration",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.6905,
-        "lng": -122.4727,
-        "location": "Thornton State Beach, Thornton Beach Rd, Daly City, CA 94015, USA"
-      },
-      {
-        "name": "Linda Mar Habitat Restoration",
-        "date": "2026-09-27",
-        "day": "Sunday",
-        "start": "5:00 PM",
-        "end": "7:00 PM",
-        "lat": 37.5955,
-        "lng": -122.4941,
-        "location": "Linda Mar, Pacifica, CA"
-      },
-      {
-        "name": "PBC General Meeting",
-        "date": "2026-10-02",
-        "day": "Friday",
-        "start": "1:00 AM",
-        "end": "2:45 AM",
+        "name": "\ud83d\udce3 PBC General Meeting",
+        "date": "2026-10-01",
+        "day": "Thursday",
+        "start": "6:00 PM",
+        "end": "7:45 PM",
         "lat": 37.6322,
         "lng": -122.4919,
         "location": "104 Hilton Way, Pacifica, CA 94044, USA"
       },
       {
-        "name": "Rockaway Beach Cleanup",
-        "date": "2026-10-03",
-        "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.6085,
-        "lng": -122.4953,
-        "location": "Rockaway Beach, Pacifica, CA 94044, USA"
-      },
-      {
         "name": "San Pedro Creek Cleanup",
         "date": "2026-10-03",
         "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.5891,
         "lng": -122.5004,
-        "location": "751 San Pedro Terrace Rd, Pacifica, CA 94044, USA"
+        "location": "751 San Pedro Terrace Rd, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/W7kpEMmBVYPkyNd8A"
+      },
+      {
+        "name": "Rockaway Beach Cleanup",
+        "date": "2026-10-03",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
+        "lat": 37.6085,
+        "lng": -122.4953,
+        "location": "Rockaway Beach, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/rAA3XkG5rhDKERMS9"
       },
       {
         "name": "Montara Beach cleanup",
         "date": "2026-10-10",
         "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.5422,
         "lng": -122.5161,
-        "location": "Montara Beach, Montara, CA 94019, USA"
+        "location": "Montara Beach, Montara, CA 94019, USA",
+        "bookingUrl": "https://forms.gle/WXvL7C1cabkv1Mwa6"
       },
       {
         "name": "Sharp Park Beach Cleanup",
         "date": "2026-10-10",
         "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.598,
         "lng": -122.4995,
-        "location": "Sharp Park Beach, Pacifica, CA 94044, USA"
+        "location": "Sharp Park Beach, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/DPXZuNBgAG9Xffyx7"
       },
       {
         "name": "Thornton Vista Cleanup and Habitat Restoration",
         "date": "2026-10-11",
         "day": "Sunday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.6905,
         "lng": -122.4727,
-        "location": "Thornton State Beach, Thornton Beach Rd, Daly City, CA 94015, USA"
+        "location": "Thornton State Beach, Thornton Beach Rd, Daly City, CA 94015, USA",
+        "bookingUrl": "https://forms.gle/jef9Tpktjv45pH3o8"
       },
       {
         "name": "Esplanade Beach Cleanup",
         "date": "2026-10-17",
         "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.598,
         "lng": -122.4995,
-        "location": "Esplanade Avenue, Esplanade Ave, Pacifica, CA 94044, USA"
+        "location": "Esplanade Avenue, Esplanade Ave, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/w1sjw7buzUmxkAJD6"
       },
       {
         "name": "Pacifica State Beach Cleanup",
         "date": "2026-10-17",
         "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.6006,
         "lng": -122.5001,
-        "location": "Pacifica State Beach, 1416 9th St, California 95814, United States"
+        "location": "Pacifica State Beach, 1416 9th St, California 95814, United States",
+        "bookingUrl": "https://forms.gle/7a9NrKTB72X4EPAAA"
       },
       {
-        "name": "Foster City Cleanup",
-        "date": "2026-10-18",
-        "day": "Sunday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.56,
-        "lng": -122.2689,
-        "location": "Foster City, CA"
-      },
-      {
-        "name": "Mussel Rock Beach Cleanup",
-        "date": "2026-10-24",
-        "day": "Saturday",
-        "start": "4:00 PM",
-        "end": "6:00 PM",
-        "lat": 37.598,
-        "lng": -122.4995,
-        "location": "Mussel Rock Beach, Pacifica, CA"
-      },
-      {
-        "name": "Linda Mar Habitat Restoration",
-        "date": "2026-10-25",
-        "day": "Sunday",
-        "start": "5:00 PM",
-        "end": "7:00 PM",
-        "lat": 37.5955,
-        "lng": -122.4941,
-        "location": "Linda Mar, Pacifica, CA"
-      },
-      {
-        "name": "PBC General Meeting",
-        "date": "2026-11-06",
-        "day": "Friday",
-        "start": "2:00 AM",
-        "end": "3:45 AM",
+        "name": "\ud83d\udce3 PBC General Meeting",
+        "date": "2026-11-05",
+        "day": "Thursday",
+        "start": "6:00 PM",
+        "end": "7:45 PM",
         "lat": 37.6322,
         "lng": -122.4919,
         "location": "104 Hilton Way, Pacifica, CA 94044, USA"
       },
       {
-        "name": "Rockaway Beach Cleanup",
-        "date": "2026-11-07",
-        "day": "Saturday",
-        "start": "5:00 PM",
-        "end": "7:00 PM",
-        "lat": 37.6085,
-        "lng": -122.4953,
-        "location": "Rockaway Beach, Pacifica, CA 94044, USA"
-      },
-      {
         "name": "San Pedro Creek Cleanup",
         "date": "2026-11-07",
         "day": "Saturday",
-        "start": "5:00 PM",
-        "end": "7:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.5891,
         "lng": -122.5004,
-        "location": "751 San Pedro Terrace Rd, Pacifica, CA 94044, USA"
+        "location": "751 San Pedro Terrace Rd, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/W7kpEMmBVYPkyNd8A"
+      },
+      {
+        "name": "Rockaway Beach Cleanup",
+        "date": "2026-11-07",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
+        "lat": 37.6085,
+        "lng": -122.4953,
+        "location": "Rockaway Beach, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/rAA3XkG5rhDKERMS9"
       },
       {
         "name": "Thornton Vista Cleanup and Habitat Restoration",
         "date": "2026-11-08",
         "day": "Sunday",
-        "start": "5:00 PM",
-        "end": "7:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.6905,
         "lng": -122.4727,
-        "location": "Thornton State Beach, Thornton Beach Rd, Daly City, CA 94015, USA"
+        "location": "Thornton State Beach, Thornton Beach Rd, Daly City, CA 94015, USA",
+        "bookingUrl": "https://forms.gle/jef9Tpktjv45pH3o8"
       },
       {
         "name": "Montara Beach cleanup",
         "date": "2026-11-14",
         "day": "Saturday",
-        "start": "5:00 PM",
-        "end": "7:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.5422,
         "lng": -122.5161,
-        "location": "Montara Beach, Montara, CA 94019, USA"
+        "location": "Montara Beach, Montara, CA 94019, USA",
+        "bookingUrl": "https://forms.gle/WXvL7C1cabkv1Mwa6"
       },
       {
         "name": "Sharp Park Beach Cleanup",
         "date": "2026-11-14",
         "day": "Saturday",
-        "start": "5:00 PM",
-        "end": "7:00 PM",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
         "lat": 37.598,
         "lng": -122.4995,
-        "location": "Sharp Park Beach, Pacifica, CA 94044, USA"
+        "location": "Sharp Park Beach, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/DPXZuNBgAG9Xffyx7"
       }
     ]
   },
@@ -358,28 +316,6 @@
     "color": "#8a6d1f",
     "events": [
       {
-        "name": "Volunteer Outdoors at Redwood Grove in Los Altos",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": null,
-        "lat": 37.3742,
-        "lng": -122.1185,
-        "location": "Redwood Grove Nature Preserve, 482 University Avenue, Los Altos, CA 94022",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/volunteer-outdoors-redwood-grove"
-      },
-      {
-        "name": "2026 Coastal Cleanup Day in Redwood City",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": null,
-        "lat": 37.4863,
-        "lng": -122.2325,
-        "location": "1400 Broadway St, Redwood City, CA 94063",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-redwood-city"
-      },
-      {
         "name": "2026 Coastal Cleanup Day at Cooley Landing",
         "date": "2026-09-19",
         "day": "Saturday",
@@ -402,15 +338,26 @@
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-at-san-francisquito-creek"
       },
       {
-        "name": "Stinkwort Weeding Party at Byrne Preserve",
-        "date": "2026-09-20",
-        "day": "Sunday",
+        "name": "2026 Coastal Cleanup Day in Redwood City",
+        "date": "2026-09-19",
+        "day": "Saturday",
         "start": "9:00 AM",
         "end": null,
-        "lat": 37.3649,
-        "lng": -122.16,
-        "location": "Byrne Preserve, 27210 Altamont Road, Los Altos Hills, CA 94022",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/20/volunteer-at-byrne-preserve"
+        "lat": 37.4863,
+        "lng": -122.2325,
+        "location": "1400 Broadway St, Redwood City, CA 94063",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-redwood-city"
+      },
+      {
+        "name": "Volunteer Outdoors at Redwood Grove in Los Altos",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.3742,
+        "lng": -122.1185,
+        "location": "Redwood Grove Nature Preserve, 482 University Avenue, Los Altos, CA 94022",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/volunteer-outdoors-redwood-grove"
       },
       {
         "name": "Sheet Mulch at Foothills Nature Preserve",
@@ -422,6 +369,17 @@
         "lng": -122.1743,
         "location": "Foothills Nature Preserve, 3300 Page Mill Rd, Palo Alto, CA 94304",
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/20/volunteer-outdoors-foothills-nature-preserve"
+      },
+      {
+        "name": "Stinkwort Weeding Party at Byrne Preserve",
+        "date": "2026-09-20",
+        "day": "Sunday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.3649,
+        "lng": -122.16,
+        "location": "Byrne Preserve, 27210 Altamont Road, Los Altos Hills, CA 94022",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/20/volunteer-at-byrne-preserve"
       },
       {
         "name": "Volunteer Outdoors at Redwood Grove in Los Altos",
@@ -453,7 +411,7 @@
         "end": null,
         "lat": 37.3132,
         "lng": -122.0628,
-        "location": "McClellan Ranch Preserve, 22221 McClellan Road, Cupertino, CA 95014",
+        "location": "22221 McClellan Road, Cupertino, CA 95014",
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/11/volunteer-at-mcclellan-ranch-preserve-in-cupertino"
       }
     ]
