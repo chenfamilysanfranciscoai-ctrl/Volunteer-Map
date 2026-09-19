@@ -472,8 +472,68 @@ CHANGELOG:
               end-to-end, and a fallback test confirming the older pipeline
               still kicks in correctly both when the key is unset and when
               the API call itself errors.
+2026-09-19  GOOGLE_CALENDAR_API_KEY got set up and this pipeline finally got
+              a real production run -- confirming Surfrider worked exactly as
+              designed (5 events fetched straight from the API, real
+              registration links, no AI extraction), but Pacific Beach
+              Coalition was STILL falling back to the older pipeline every
+              time, now failing differently: not "key missing" but a genuine
+              "404 Client Error: Not Found" from
+              www.googleapis.com/calendar/v3/calendars/.../events, using the
+              exact calendar id extract_google_calendar_id() had pulled from
+              the page.
+                Root-caused live rather than guessed: pulled Pacific Beach
+              Coalition's actual calendar page HTML directly and confirmed
+              its embed iframe's `src` value is NOT a plain calendar id like
+              Surfrider's -- it's base64 ("cGlja2l0dXBwYWNpZmljYUBnbWFpbC5j
+              b20"). extract_google_calendar_id() was using that raw base64
+              string AS the calendar id, which is why every fetch 404'd: no
+              calendar is literally named that string. Decoded it
+              (base64 -> "pickituppacifica@gmail.com") and verified LIVE, in
+              a real browser, that a direct call to this exact same
+              production endpoint --
+              https://www.googleapis.com/calendar/v3/calendars/pickituppacifica%40gmail.com/events
+              -- returns a real 200 with real event data for that decoded
+              id, proving definitively that the calendar's public sharing
+              was never the problem; the raw, un-decoded src value was.
+                Added _resolve_calendar_id(): if the embed's `src` doesn't
+              already contain "@" (a real calendar id always does), try
+              base64-decoding it (padding it back out first, since it's
+              routinely stored unpadded in HTML/URLs -- confirmed true for
+              this exact id, 35 chars, not a multiple of 4) and use the
+              decoded value only if THAT contains "@" too -- otherwise the
+              original string is kept untouched, so a future org with a
+              plain but coincidentally base64-charset-safe id can't get
+              mangled by this. extract_google_calendar_id() now runs every
+              extracted id through this before returning it, so both the
+              plain-id case (Surfrider) and the base64 case (Pacific Beach
+              Coalition) resolve to the correct real id automatically, with
+              no per-org configuration needed.
+                Also used this same production run's log to confirm two
+              Surfrider events (both recurring "Monthly Chapter Meeting"
+              instances) get correctly dropped for having no location data
+              anywhere -- no location field, no "Where to Meet:" text, and
+              (checked directly against the real API response) nothing
+              location-like anywhere in the description either. This is not
+              a regression from the API path: the older AI-extraction
+              pipeline hit the exact same wall on this org's own page text
+              in the past (its earlier log line literally read "could not
+              geocode 'Meeting location provided in registration link'" --
+              i.e. even Claude could only find a placeholder saying the
+              location was inside the registration form, not an actual
+              address). Nothing to fix here -- a real event with no
+              discoverable location correctly gets skipped rather than
+              plotted with a guessed or wrong pin, on both pipelines alike.
+                Verified with 4 new unit tests covering _resolve_calendar_id
+              directly (decodes the real confirmed PBC id, leaves a plain id
+              alone, leaves non-calendar-shaped base64 alone rather than
+              guessing, and handles the padding-stripped form same as the
+              real HTML has it) -- 19 unit tests total now, all passing --
+              plus a full mocked dry run of main() end-to-end confirming
+              nothing else regressed.
 """
 
+import base64
 import json
 import os
 import re
@@ -694,7 +754,46 @@ def extract_google_calendar_id(page_html):
     src_values = qs.get("src")
     if not src_values:
         return None
-    return src_values[0]
+    return _resolve_calendar_id(src_values[0])
+
+
+def _resolve_calendar_id(raw_id):
+    """The `src` value from a Google Calendar embed is usually already the
+    real calendar id (e.g. "xxxx@group.calendar.google.com" -- confirmed
+    this is exactly what Surfrider's embed uses, and it works as-is).
+
+    2026-09-19: root-caused, with a real live test, why Pacific Beach
+    Coalition's API fetch was 404ing on every run even after
+    GOOGLE_CALENDAR_API_KEY was correctly set: its embed's `src` isn't a
+    plain id at all, it's base64 -- "cGlja2l0dXBwYWNpZmljYUBnbWFpbC5jb20",
+    confirmed live to be exactly the base64 encoding of
+    "pickituppacifica@gmail.com". Our fetch was asking the API for a
+    calendar literally NAMED that base64 string, which of course doesn't
+    exist (404) -- meanwhile the calendar IS genuinely public: a direct
+    call to this script's own endpoint,
+    https://www.googleapis.com/calendar/v3/calendars/pickituppacifica%40gmail.com/events,
+    was verified live (in a browser, using a real key) to return 200 with
+    real event data, proving the base64 id -- not the calendar's public
+    sharing settings -- was the entire problem.
+
+    A plain id always contains "@" already, so only attempt to decode when
+    it doesn't, and only trust the decoded result if IT contains "@" too
+    (a real calendar id always does) -- otherwise silently keep the
+    original string. This avoids mangling some future org's plain id that
+    happens to only use base64-safe characters (unlikely, but cheap to
+    guard against) while still recovering the real id for orgs like this
+    one."""
+    if "@" in raw_id:
+        return raw_id
+    try:
+        padded = raw_id + "=" * (-len(raw_id) % 4)
+        decoded = base64.b64decode(padded).decode("utf-8")
+    except Exception:
+        return raw_id
+    if "@" in decoded:
+        log(f"  (this calendar's embed uses a base64-encoded id -- decoded it to the real calendar id)")
+        return decoded
+    return raw_id
 
 
 def fetch_google_calendar_ics(calendar_id):
