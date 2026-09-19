@@ -112,7 +112,7 @@ CHANGELOG:
                   reproducible by hand since an already-logged-in interactive
                   browser doesn't see it). Next run's log will show directly
                   whether this was the cause.
-  2026-09-10c Paul asked for thoroughness over speed after round 2 still came
+  2026-09-10c The site owner asked for thoroughness over speed after round 2 still came
               back with both orgs empty. Run #4's actual log (now readable
               thanks to the logging added in round 2) explained both:
                 - Pacific Beach Coalition: the agenda view DID render real
@@ -160,7 +160,7 @@ CHANGELOG:
               try/except, so nothing short of the whole process dying can
               stop events.json from being written with whatever good data was
               actually collected.
-  2026-09-11b Paul re-ran before this fix had actually been pasted in, so run
+  2026-09-11b The site owner re-ran before this fix had actually been pasted in, so run
               #7 hit the identical crash again on the identical line -- but
               its log was still useful: with the earlier UA/stabilize fix,
               Pacific Beach Coalition's agenda view now genuinely works
@@ -189,7 +189,7 @@ CHANGELOG:
               run, all at once) confirming nothing crashes and every
               previously-working path (LOCATION_OVERRIDES, already-good
               addresses) is unaffected.
-  2026-09-17  Paul reported three things after a week of runs (#8 manual,
+  2026-09-17  The site owner reported three things after a week of runs (#8 manual,
               #9 scheduled) had gone by since the last fix: Pacific Beach
               Coalition empty again, "dates aren't right on a lot of the
               links", and a Save The Bay Hayward event dated Oct 3rd linking
@@ -244,9 +244,9 @@ CHANGELOG:
                   get tried, just after the now-earlier fallbacks that would
                   fail for them anyway) and re-ran a full mocked dry run of
                   main() end to end before shipping.
-  2026-09-18  Paul re-ran with the above fixes applied and reported three
+  2026-09-18  The site owner re-ran with the above fixes applied and reported three
               more things: Grassroots Ecology events still have no
-              "I will help!" link at all (he pointed at
+              "I will help!" link at all (they pointed at
               grassrootsecology.org/calendar -> click a date -> click an
               event -> lands on a page like .../event-calendar/2026/09/19/
               coastal-cleanup-day-redwood-city, and asked for exactly that);
@@ -268,12 +268,12 @@ CHANGELOG:
                   wasn't landing for Grassroots Ecology. Rewrote it to call
                   Claude once PER detail page instead (confirmed live: each
                   event has its own page, e.g. exactly the Redwood City URL
-                  Paul linked, with its own "Register Here" button), then
+                  the site owner linked, with its own "Register Here" button), then
                   set that event's bookingUrl to the page's own URL
                   programmatically afterward -- not inferred by the model at
-                  all, so it can't be wrong. This is also just what Paul
+                  all, so it can't be wrong. This is also just what the site owner
                   described wanting: the button now goes to that same
-                  "volunteer tab" he clicks through to by hand. Applies to
+                  "volunteer tab" they click through to by hand. Applies to
                   both html_listing orgs (Save The Bay too), so both are now
                   equally reliable instead of one working by luck.
                 - Investigated the Hayward date claim directly: the map's
@@ -298,7 +298,7 @@ CHANGELOG:
                   (including the new per-detail-page extraction path) before
                   sending, confirming bookingUrl is set correctly per event
                   and nothing crashes.
-  2026-09-18b Paul clarified the "missing Sept 19 events" from earlier the
+  2026-09-18b The site owner clarified the "missing Sept 19 events" from earlier the
               same day were about Pacific Beach Coalition specifically, not
               Grassroots Ecology -- and indeed, run #10 (the first real run
               with the domcontentloaded fix from earlier today) still came
@@ -329,6 +329,149 @@ CHANGELOG:
               unit tests (recovers on a one-off miss, doesn't retry for
               short text, retries exactly once and gives up on a persistent
               failure) plus a full mocked dry run of main() end to end.
+  2026-09-18c The 09-18b retry fix shipped, but run #11 showed Pacific Beach
+              Coalition STILL returning 0 events -- and this time the log
+              (with the new 500-char preview) proved the retry ALSO failed
+              on the exact same real content: a real time, "Calera Creek
+              Habitat Restoration", and a real maps.app.goo.gl link were all
+              plainly present in the source text handed to Claude on both
+              calls. That ruled out "one-off stochastic miss" for good.
+              Pacific Beach Coalition turned out to be the ONLY org
+              configured with has_site_form_table -- which appended up to
+              60,000 characters of the calendar page's raw, unrendered HTML
+              (mostly nav/footer/script boilerplate) as extra_context, so
+              Claude could try to match each event to its own sign-up form
+              link straight from the whole page. That was the one
+              structural difference between this org and every other org in
+              the same run, all of which extracted correctly. Removed the
+              feature entirely (the agenda text alone already carries a
+              per-event link when the source page has one). Verified with a
+              unit test confirming extra_context is now always empty for
+              this org, plus a full mocked dry run. Checked GitHub Actions
+              directly afterward: run #12 (with this fix) succeeded with 25
+              real, correctly-geocoded Pacific Beach Coalition events, live
+              on the map (screenshot-verified).
+  2026-09-18d The site owner asked for Pacific Beach Coalition's per-site direct
+              Google Form links specifically, since that's what makes this
+              org's data special. Re-added the site->form matching, but
+              entirely in code this time, AFTER extraction, instead of
+              handing Claude the raw page (which is what broke extraction
+              in 09-18c): _extract_site_form_links() pulls (site name, form
+              URL) pairs straight out of the calendar page's own small HTML
+              table (confirmed live: a plain, un-rendered <table> with one
+              row per site -- 11 rows on a real fetch, all 11 containing a
+              form link), and _match_site_form_link() scores each extracted
+              event against those rows by shared, inverse-document-
+              frequency-weighted words (so a word nearly every row has, like
+              "cleanup" or "beach", barely counts, while a rare place name
+              like "foster" or "mussel" counts heavily), refusing to guess
+              when the top two candidates are within a hair of each other.
+              A first version still produced one false positive under
+              testing against real data: "Pacifica State Beach Cleanup" (a
+              real event with no table row) won a clear, non-tied match
+              against "Linda Mar State Beach Cleanup" purely off generic
+              shared words ("pacifica", "state", "beach", "cleanup") that
+              most of the table's rows share. Fixed with a second "anchor
+              gate" check: even a non-tied winner must also share at least
+              one genuinely RARE word (appearing in only a couple of the
+              table's own rows) with the event, using a stricter stopword
+              set that also strips those generic descriptive words --
+              rejecting outright (never falling back to a lower-ranked
+              candidate) when it doesn't. Verified against the real 11-row
+              table plus real event names/locations pulled from a live
+              events.json: 16 test cases covering every real site (including
+              disambiguating "Linda Mar State Beach Cleanup" from the
+              separate "Linda Mar Habitat Restoration" at the same spot) and
+              five real non-matching events that must return None (Pacifica
+              State Beach Cleanup, Thornton Vista Cleanup and Habitat
+              Restoration, Calera Creek Habitat Restoration, CA Coastal
+              Cleanup Day, PBC General Meeting) -- all pass. Also re-verified
+              the underlying table parser against the real, live PBC
+              calendar page HTML (not just a reconstruction), confirming 11
+              real rows with the exact same site names used in testing.
+              Finished with a full mocked dry run of process_google_calendar_org()
+              confirming: extra_context stays empty (doesn't regress
+              09-18c), exactly one Claude call is made, real events get
+              matched to their real form links, and events with no table row
+              are correctly left without one rather than guessing.
+  2026-09-18e The site owner walked through the Pacific Beach Coalition calendar by
+              hand (main page -> click a date -> click an event -> "Register
+              online to volunteer") and gave a real, working form URL --
+              which immediately showed the whole 09-18d approach above,
+              while real and thoroughly tested against the data it was
+              built on, was solving the wrong problem. That real link
+              turned out to belong to "Calera Creek Habitat Restoration",
+              an event that was NEVER in the 11-row site->form table on the
+              calendar page (confirmed: the table-matching tests correctly
+              returned None for it) -- because the real registration link
+              was never in that table at all. It's embedded directly in
+              each individual Google Calendar EVENT's own description,
+              which only becomes visible by clicking that specific event.
+              Investigated live (Chrome DevTools-style, via the browser
+              tools) what actually powers that per-event popup: the
+              calendar's own embed widget calls Google's public Calendar
+              API v3 (`events.list`) directly from the browser, using an
+              API key baked into Google's own client-side JS -- the exact
+              same request anyone can make with their own free API key (no
+              OAuth, no billing required -- confirmed against Google's
+              current docs). That response contains the FULL event data
+              already, including each event's own description with its
+              real registration link, and confirmed the same is true for
+              Surfrider's calendar too (the site owner asked whether this would help
+              there as well -- it does, same mechanism, same fix).
+                Replaced the whole site-form-table/word-matching approach
+              (_extract_site_form_links, _match_site_form_link, and the two
+              stopword sets around it -- all now deleted) with a direct
+              call to that same official API
+              (fetch_google_calendar_events_via_api(), using a new optional
+              GOOGLE_CALENDAR_API_KEY secret), which gives exact structured
+              data straight from Google for both "google_calendar" orgs: no
+              more AI extraction, no more guessing at dates/times/locations
+              from scraped text, and each event's own real registration
+              link pulled directly out of its description
+              (_extract_registration_link_from_description) rather than
+              approximated after the fact. Along the way, confirmed live
+              that the register link inside a real description is
+              sometimes wrapped in Google's own "https://www.google.com/
+              url?q=..." redirect shim (even in the raw API response, not
+              just the rendered widget) -- decoded directly
+              (_decode_google_url_shim) rather than depending on that
+              redirect service behaving the same way for a plain
+              server-side request. Also confirmed live that the register
+              link's visible text is sometimes wrapped in a NESTED tag
+              (e.g. "<a ...><b>REGISTER HERE</b></a>", even triple-nested
+              for one Surfrider event) -- a naive "no nested tags" regex
+              would silently miss these entirely, so
+              _extract_registration_link_from_description() captures
+              everything up to the closing </a> and strips inner tags from
+              the captured text afterward instead. Separately confirmed
+              live that a few PBC events (Foster City Cleanup, Mussel Rock
+              Beach Cleanup, Linda Mar Habitat Restoration, CA Coastal
+              Cleanup Day) have no location field and no "Where to Meet:"
+              text in their description either -- previously they still
+              showed up on the map because Claude's own extraction
+              inferred a reasonable location from the event name; the pure
+              structured-API path has no such inference, so without a
+              fallback these would have silently disappeared from the map,
+              a real regression. Added a small named-site fallback list
+              (_PBC_EVENT_NAME_LOCATION_FALLBACKS) for exactly these
+              already-known recurring events, which still goes through the
+              normal geocode() fallback chain rather than a hardcoded
+              coordinate.
+                Kept the whole older ICS/agenda-view/AI-extraction pipeline
+              in place as an automatic fallback -- both when
+              GOOGLE_CALENDAR_API_KEY isn't set yet and when the API call
+              itself fails for any reason (bad key, quota, network) -- so
+              this can't leave either org silently empty. Verified with 15
+              unit tests covering the link-decoding, nested-tag extraction,
+              location fallback chain, and event-shape conversion against
+              real structures confirmed live for both orgs, plus a full
+              mocked dry run of process_google_calendar_org() (API path for
+              both orgs, including the exact Thornton Vista event the old
+              table-matching approach could never link) and of main()
+              end-to-end, and a fallback test confirming the older pipeline
+              still kicks in correctly both when the key is unset and when
+              the API call itself errors.
 """
 
 import json
@@ -354,6 +497,16 @@ except ImportError:
 MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5")
 LOOKAHEAD_DAYS = int(os.environ.get("LOOKAHEAD_DAYS", "56"))  # ~8 weeks
 EVENTS_JSON_PATH = os.environ.get("EVENTS_JSON_PATH", "events.json")
+# Optional: a free Google Cloud API key with the Calendar API enabled (no
+# billing required -- see the CHANGELOG entry below dated 2026-09-18e, and
+# the repo secret GOOGLE_CALENDAR_API_KEY it's read from in the workflow).
+# When set, Surfrider's and
+# Pacific Beach Coalition's calendars (both "google_calendar" orgs) are read
+# straight from Google's own official Calendar API instead of the older
+# ICS/agenda-view + AI-extraction pipeline -- exact structured data and each
+# event's own real registration link, no guessing. When unset, those two
+# orgs silently fall back to the older pipeline so the script still works.
+GOOGLE_CALENDAR_API_KEY = os.environ.get("GOOGLE_CALENDAR_API_KEY")
 USER_AGENT = "VolunteerMapBot/1.0 (+https://github.com/chenfamilysanfranciscoai-ctrl/Volunteer-Map; contact: chenfamilysanfranciscoai-ctrl)"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
@@ -382,10 +535,6 @@ ORGS = [
         "color": "#d9642b",
         "kind": "google_calendar",
         "calendar_page": "https://www.pacificbeachcoalition.org/calendar-2026/",
-        # This org used to also send the calendar page's raw HTML as extra
-        # context, to match each event to a per-site sign-up form link --
-        # removed 2026-09-18 (see CHANGELOG) after it was root-caused as the
-        # reason this org's extraction kept coming back with 0 events.
     },
     {
         "org": "Save The Bay",
@@ -899,6 +1048,231 @@ def slugify_for_log(s):
     return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
 
 
+# 2026-09-18e: the site-name -> form-link word-matching approach that used
+# to live here (_extract_site_form_links / _match_site_form_link, plus the
+# _SITE_FORM_STOPWORDS/_SITE_ANCHOR_STOPWORDS machinery around it) is gone.
+# The site owner walked through the calendar by hand and showed that PBC's real
+# registration links don't come from the small site->form table on the
+# calendar page at all -- they're embedded directly in each individual
+# Google Calendar EVENT's own description (click an event, there's a
+# "Register online to volunteer" link right there), which the table-matching
+# approach never had access to and could only approximate by fuzzy word
+# overlap. That approximation was real work (see the CHANGELOG entries this
+# replaces) but it was solving the wrong problem: matching against a
+# generic ~11-row table of recurring sites, when the actual authoritative,
+# per-EVENT link was sitting one click away the whole time -- confirmed
+# live for "Calera Creek Habitat Restoration" (an event that was never in
+# that table and always correctly came back with no link) and matches the
+# exact real form URL the site owner copied out by hand. See
+# _extract_registration_link_from_description() and
+# fetch_google_calendar_events_via_api() below for the real mechanism.
+
+
+def _decode_google_url_shim(href):
+    """Google Calendar's own rich-text description editor wraps a pasted
+    link in its own https://www.google.com/url?q=<real-url>&... redirect
+    shim -- confirmed live that this is baked into the raw description text
+    Google's API itself returns, not just something the embed widget adds
+    at render time. Decode straight to the real target instead of depending
+    on that redirect service behaving the same way for a plain server-side
+    request with no browser session behind it."""
+    from urllib.parse import urlparse, parse_qs
+
+    parsed = urlparse(href)
+    if parsed.netloc in ("www.google.com", "google.com") and parsed.path == "/url":
+        qs = parse_qs(parsed.query)
+        q = qs.get("q")
+        if q:
+            return q[0]
+    return href
+
+
+_REGISTRATION_LINK_KEYWORDS = re.compile(r"\b(register|registration|sign[\s-]?up|rsvp|volunteer)\b", re.I)
+_KNOWN_SIGNUP_DOMAINS = re.compile(
+    r"(docs\.google\.com/forms|forms\.gle|eventbrite\.com|signupgenius\.com|surveymonkey\.com)", re.I
+)
+
+
+def _extract_registration_link_from_description(description_html):
+    """Find the real, event-specific sign-up link inside a Google Calendar
+    event's own description HTML, if one is there.
+
+    Live-confirmed (Pacific Beach Coalition, Surfrider) that every org here
+    wraps its registration link in a "friendly" anchor like
+    '<a href="...">Register online to volunteer</a>' or
+    '<a href="..."><b>REGISTER HERE</b></a>' -- note the second one nests a
+    <b> tag INSIDE the <a>, so a naive "<a[^>]*>([^<]*)</a>" pattern (which
+    stops at the first '<') never matches it at all; this one captures
+    everything up to the closing </a> non-greedily and strips inner tags
+    from the captured text afterward instead. Scores each link in the
+    description by whether its visible text looks like a registration
+    prompt and/or its target is a known sign-up-form domain, and returns
+    the best-scoring one -- or None if nothing scores, same "never invent a
+    link" principle as the rest of this pipeline."""
+    if not description_html:
+        return None
+    import html as html_module
+
+    candidates = []
+    for m in re.finditer(r'<a\s+[^>]*href="([^"]*)"[^>]*>(.*?)</a>', description_html, re.I | re.S):
+        href, inner_html = m.group(1), m.group(2)
+        text = re.sub(r"<[^>]+>", " ", inner_html)
+        text = html_module.unescape(text)
+        text = re.sub(r"\s+", " ", text).strip()
+        target = _decode_google_url_shim(html_module.unescape(href))
+        score = 0
+        if _REGISTRATION_LINK_KEYWORDS.search(text):
+            score += 2
+        if _KNOWN_SIGNUP_DOMAINS.search(target):
+            score += 1
+        if score > 0:
+            candidates.append((score, target))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda c: -c[0])
+    return candidates[0][1]
+
+
+# A few Pacific Beach Coalition events whose Google Calendar entry has no
+# usable location text at all -- confirmed live via the Calendar API: the
+# structured `location` field is empty (or, for one event, a bare
+# maps.app.goo.gl link with no address text, handled separately below by
+# reading the description's own "Where to Meet:" line first), and there's
+# no "Where to Meet:" fallback in the description either. These are
+# recurring, named sites we already know the general area of from this
+# org's own site -- falls back to this ONLY after both the API location
+# field and the description's "Where to Meet:" line come up empty, and
+# still goes through the normal geocode() fallback chain like any other
+# location string (not a hardcoded coordinate), so a bad guess here still
+# can't silently plot a wrong pin the way LOCATION_OVERRIDES could.
+_PBC_EVENT_NAME_LOCATION_FALLBACKS = [
+    (re.compile(r"foster city", re.I), "Foster City, CA"),
+    (re.compile(r"mussel rock", re.I), "Mussel Rock, Daly City, CA"),
+    (re.compile(r"linda mar", re.I), "Linda Mar, Pacifica, CA"),
+    (re.compile(r"coastal cleanup day", re.I), "Pacifica, CA"),
+]
+
+_WHERE_TO_MEET_RE = re.compile(r"Where to Meet:\s*([^<\n]+)", re.I)
+
+
+def _pick_event_location(item):
+    """Best available location text for one Calendar API event item.
+
+    Order of attempts:
+      1. The structured `location` field, if it's real text (not empty,
+         not itself a bare URL -- confirmed live that Pacific Beach
+         Coalition sometimes puts a maps.app.goo.gl short link there
+         instead of an address, e.g. for "Calera Creek Habitat
+         Restoration", which geocode() obviously can't do anything with).
+      2. A "Where to Meet: ..." line inside the event's own description,
+         if present (confirmed live: that's exactly where Calera Creek's
+         real address-like text actually lives, since its `location` field
+         is just the maps link above).
+      3. A small set of known-recurring-site name fallbacks for the
+         handful of events that have neither (see
+         _PBC_EVENT_NAME_LOCATION_FALLBACKS above)."""
+    loc = (item.get("location") or "").strip()
+    if loc and not re.match(r"^https?://", loc):
+        return loc
+
+    description = item.get("description") or ""
+    m = _WHERE_TO_MEET_RE.search(description)
+    if m:
+        import html as html_module
+
+        return html_module.unescape(m.group(1)).strip()
+
+    name = item.get("summary") or ""
+    for pattern, fallback_loc in _PBC_EVENT_NAME_LOCATION_FALLBACKS:
+        if pattern.search(name):
+            return fallback_loc
+
+    return loc  # possibly still empty or a bare URL -- geocode() will cleanly skip it, same as any event with no usable location today
+
+
+def _format_ampm(dt):
+    """'9:00 AM' style -- matches the "H:MM AM/PM" convention the rest of
+    this pipeline already uses (previously produced by Claude's own
+    extraction), so output looks identical whichever path an event came
+    through."""
+    return dt.strftime("%I:%M %p").lstrip("0")
+
+
+def _google_calendar_item_to_raw_event(item):
+    """Convert one Calendar API v3 event item into this script's normal raw
+    event dict shape (the same shape claude_extract_events() produces), so
+    everything downstream in main() -- date filtering, geocoding, bookingUrl
+    verification -- works unchanged regardless of which path an event came
+    through."""
+    if item.get("status") == "cancelled":
+        return None
+    name = (item.get("summary") or "").strip()
+    if not name:
+        return None
+
+    start = item.get("start") or {}
+    end = item.get("end") or {}
+    if "date" in start:
+        # All-day event (e.g. "CA Coastal Cleanup Day") -- no specific time.
+        date_str = start["date"]
+        start_str = "All day"
+        end_str = None
+    elif "dateTime" in start:
+        start_dt = datetime.fromisoformat(start["dateTime"])
+        date_str = start_dt.strftime("%Y-%m-%d")
+        start_str = _format_ampm(start_dt)
+        end_str = None
+        if "dateTime" in end:
+            end_str = _format_ampm(datetime.fromisoformat(end["dateTime"]))
+    else:
+        return None
+
+    return {
+        "name": name,
+        "date": date_str,
+        "start": start_str,
+        "end": end_str,
+        "location": _pick_event_location(item),
+        "bookingUrl": _extract_registration_link_from_description(item.get("description")),
+    }
+
+
+GOOGLE_CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
+
+
+def fetch_google_calendar_events_via_api(calendar_id, time_min, time_max):
+    """Pull this calendar's events directly from Google's own public
+    Calendar API v3 (read-only, via GOOGLE_CALENDAR_API_KEY) instead of
+    scraping the embed widget's rendered HTML or its ICS/agenda-view
+    fallbacks. Structured JSON, not text a model has to interpret -- exact
+    dates/times/locations, and each event's own real registration link
+    straight from its description field (see
+    _extract_registration_link_from_description), instead of trying to
+    reconstruct it after the fact from a table or free text. This is the
+    officially documented public endpoint (developers.google.com/workspace/
+    calendar/api/v3/reference/events/list) -- requires the calendar's own
+    sharing settings to have "Make available to public" / "See all event
+    details" turned on, which both Surfrider's and Pacific Beach
+    Coalition's calendars already do (confirmed live: that's the same
+    setting that lets their public embed widgets show full event details
+    to anonymous visitors today)."""
+    from urllib.parse import quote
+
+    url = f"{GOOGLE_CALENDAR_API_BASE}/calendars/{quote(calendar_id, safe='')}/events"
+    params = {
+        "singleEvents": "true",
+        "orderBy": "startTime",
+        "timeZone": "America/Los_Angeles",
+        "maxResults": 250,
+        "timeMin": time_min,
+        "timeMax": time_max,
+        "key": GOOGLE_CALENDAR_API_KEY,
+    }
+    resp = requests.get(url, params=params, headers=HTTP_HEADERS, timeout=30)
+    resp.raise_for_status()
+    return resp.json().get("items", [])
+
+
 def process_google_calendar_org(client, org_cfg):
     page_html = http_get(org_cfg["calendar_page"])
     cal_id = extract_google_calendar_id(page_html)
@@ -913,6 +1287,29 @@ def process_google_calendar_org(client, org_cfg):
             f"even after a rendered-browser fetch -- the page structure may have "
             f"changed more substantially and needs a human look")
         return []
+
+    if GOOGLE_CALENDAR_API_KEY:
+        try:
+            today = date.today()
+            # Wrapped a day wider on each side than we actually need -- main()
+            # re-filters to the exact date range afterward anyway, this just
+            # guards against a UTC/Pacific timezone boundary off-by-one.
+            time_min = (today - timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")
+            time_max = (today + timedelta(days=LOOKAHEAD_DAYS + 1)).strftime("%Y-%m-%dT00:00:00Z")
+            items = fetch_google_calendar_events_via_api(cal_id, time_min, time_max)
+            raw_events = [ev for item in items if (ev := _google_calendar_item_to_raw_event(item))]
+            with_links = sum(1 for ev in raw_events if ev.get("bookingUrl"))
+            log(f"  fetched {len(raw_events)} event(s) directly from the Google Calendar API "
+                f"({with_links} with their own real registration link) -- no AI extraction needed")
+            return raw_events
+        except Exception as e:
+            log(f"  ! Google Calendar API fetch failed ({e}) -- falling back to the "
+                f"older AI-extraction pipeline for this run")
+            # falls through to the pipeline below
+    else:
+        log("  (GOOGLE_CALENDAR_API_KEY not set -- using the older AI-extraction pipeline; "
+            "add that secret for exact structured data straight from Google instead, see the "
+            "2026-09-18e CHANGELOG entry above)")
     try:
         source_text = fetch_google_calendar_ics(cal_id)
     except requests.RequestException as e:
@@ -924,25 +1321,6 @@ def process_google_calendar_org(client, org_cfg):
         log(f"  ! iCal export failed for this calendar ({e}) -- falling back to its agenda view")
         source_text = render_google_calendar_agenda(cal_id)
 
-    # 2026-09-18c: `has_site_form_table` used to append up to 60,000 chars of
-    # the calendar page's raw HTML as extra_context, so Claude could match
-    # each event to a per-site sign-up form link. Root-caused (from run #11's
-    # log) as the actual cause of Pacific Beach Coalition repeatedly
-    # extracting 0 events even from agenda text confirmed -- by directly
-    # reading the logged 500-char preview -- to contain real events (Calera
-    # Creek Habitat Restoration, a real time, a real maps link). PBC is the
-    # ONLY org that ever set this flag, and the ONLY org that failed twice in
-    # a row (even with the new retry) in that same run while every other org
-    # extracted fine -- that's too specific a correlation to ignore. Dumping
-    # 60,000 mostly-irrelevant characters (nav/footer/scripts) of raw,
-    # unrendered HTML alongside ~4,800 characters of real agenda text was
-    # apparently enough to derail the extraction entirely. Dropped this
-    # feature rather than trying to shrink or reformat it under time
-    # pressure -- the agenda text alone already carries real per-event links
-    # when the source page has them (confirmed in that same log preview: a
-    # maps.app.goo.gl link sitting right under "Calera Creek Habitat
-    # Restoration"), so this wasn't pulling its weight against the risk of
-    # silently zeroing out the whole org.
     raw_events = claude_extract_events(client, org_cfg["org"], source_text)
     log(f"  Claude extracted {len(raw_events)} raw event(s) (before date filtering/geocoding)")
     return raw_events
@@ -1023,7 +1401,7 @@ def process_html_listing_org(client, org_cfg):
         return raw_events
 
     # One Claude call PER detail page rather than one call across all of them
-    # combined. Paul reported (2026-09-18) that Grassroots Ecology's events
+    # combined. The site owner reported (2026-09-18) that Grassroots Ecology's events
     # were coming through with no bookingUrl at all, unlike Save The Bay's --
     # the difference: when every detail page's text is blended into a single
     # blob and Claude is asked to extract every event at once, matching each
@@ -1033,10 +1411,10 @@ def process_html_listing_org(client, org_cfg):
     # entirely: whatever event(s) come out of THIS call can only have come
     # from THIS url, so bookingUrl is set programmatically afterward, not
     # trusted from the model's own output. This also directly delivers what
-    # Paul asked for -- each event's "I will help!" button goes to that
+    # the site owner asked for -- each event's "I will help!" button goes to that
     # event's own page on the org's site (e.g.
     # https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-
-    # cleanup-day-redwood-city), the same "volunteer tab" he described
+    # cleanup-day-redwood-city), the same "volunteer tab" they described
     # clicking through to by hand.
     raw_events = []
     for url in detail_urls:
