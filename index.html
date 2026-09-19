@@ -271,7 +271,7 @@ async function loadOrgData(){
 try {
 // Bust both the browser cache and GitHub Pages' CDN cache with a
 // per-load timestamp, and also tell fetch() itself not to use any
-// cached copy -- without this, a visitor (or Paul testing the site
+// cached copy -- without this, a visitor (or the site owner testing it
 // right after a data update) can keep seeing an old events.json long
 // after a newer one has been pushed, which looks exactly like "wrong
 // dates" or "the wrong event" even though the source data is correct.
