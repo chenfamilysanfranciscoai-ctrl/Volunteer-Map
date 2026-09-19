@@ -316,6 +316,17 @@
     "color": "#8a6d1f",
     "events": [
       {
+        "name": "2026 Coastal Cleanup Day in Redwood City",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.4863,
+        "lng": -122.2325,
+        "location": "1400 Broadway St, Redwood City, CA 94063",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-redwood-city"
+      },
+      {
         "name": "2026 Coastal Cleanup Day at Cooley Landing",
         "date": "2026-09-19",
         "day": "Saturday",
@@ -336,17 +347,6 @@
         "lng": -122.1709,
         "location": "1 Alma Street, Menlo Park, CA 94025",
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-at-san-francisquito-creek"
-      },
-      {
-        "name": "2026 Coastal Cleanup Day in Redwood City",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": null,
-        "lat": 37.4863,
-        "lng": -122.2325,
-        "location": "1400 Broadway St, Redwood City, CA 94063",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-redwood-city"
       },
       {
         "name": "Volunteer Outdoors at Redwood Grove in Los Altos",
@@ -411,7 +411,7 @@
         "end": null,
         "lat": 37.3132,
         "lng": -122.0628,
-        "location": "22221 McClellan Road, Cupertino, CA 95014",
+        "location": "McClellan Ranch Preserve, 22221 McClellan Road, Cupertino, CA 95014",
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/11/volunteer-at-mcclellan-ranch-preserve-in-cupertino"
       }
     ]
