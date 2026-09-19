@@ -4,6 +4,17 @@
     "color": "#4a7856",
     "events": [
       {
+        "name": "Coastal Cleanup Day",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "12:00 PM",
+        "lat": 37.598,
+        "lng": -122.4995,
+        "location": "Pacifica, CA",
+        "bookingUrl": "https://x.gldn.io/e/CzRklB5sA5b"
+      },
+      {
         "name": "Ocean Beach Cleanup - Surfrider San Francisco",
         "date": "2026-10-04",
         "day": "Sunday",
@@ -13,6 +24,17 @@
         "lng": -122.5102,
         "location": "Ocean Beach, San Francisco, CA, USA",
         "bookingUrl": "https://x.gldn.io/e/9B5JZOXsA5b"
+      },
+      {
+        "name": "Ocean Beach Cleanup - Surfrider San Francisco",
+        "date": "2026-11-01",
+        "day": "Sunday",
+        "start": "10:00 AM",
+        "end": "12:00 PM",
+        "lat": 37.7562,
+        "lng": -122.5102,
+        "location": "Ocean Beach, San Francisco, CA, USA",
+        "bookingUrl": "https://x.gldn.io/e/BggST6TsA5b"
       }
     ]
   },
@@ -26,8 +48,8 @@
         "day": "Saturday",
         "start": "4:00 PM",
         "end": "6:00 PM",
-        "lat": 37.6119,
-        "lng": -122.4948,
+        "lat": 37.6079,
+        "lng": -122.4651,
         "location": "Calera Creek, Pacifica, CA",
         "bookingUrl": "https://maps.app.goo.gl/ijY7ZCiLaD5NQEgg8"
       },
@@ -336,17 +358,6 @@
     "color": "#8a6d1f",
     "events": [
       {
-        "name": "2026 Coastal Cleanup Day in Redwood City",
-        "date": "2026-09-19",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": null,
-        "lat": 37.4863,
-        "lng": -122.2325,
-        "location": "1400 Broadway St, Redwood City, CA 94063",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-redwood-city"
-      },
-      {
         "name": "Volunteer Outdoors at Redwood Grove in Los Altos",
         "date": "2026-09-19",
         "day": "Saturday",
@@ -358,15 +369,15 @@
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/volunteer-outdoors-redwood-grove"
       },
       {
-        "name": "2026 Coastal Cleanup Day at San Francisquito Creek",
+        "name": "2026 Coastal Cleanup Day in Redwood City",
         "date": "2026-09-19",
         "day": "Saturday",
         "start": "9:00 AM",
         "end": null,
-        "lat": 37.4479,
-        "lng": -122.1709,
-        "location": "1 Alma Street, Menlo Park, CA 94025",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-at-san-francisquito-creek"
+        "lat": 37.4863,
+        "lng": -122.2325,
+        "location": "1400 Broadway St, Redwood City, CA 94063",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-redwood-city"
       },
       {
         "name": "2026 Coastal Cleanup Day at Cooley Landing",
@@ -378,6 +389,17 @@
         "lng": -122.1219,
         "location": "Cooley Landing, 2100 Bay Road, East Palo Alto, CA 94303",
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-at-cooley-landing"
+      },
+      {
+        "name": "2026 Coastal Cleanup Day at San Francisquito Creek",
+        "date": "2026-09-19",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.4479,
+        "lng": -122.1709,
+        "location": "1 Alma Street, Menlo Park, CA 94025",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/09/19/coastal-cleanup-day-at-san-francisquito-creek"
       },
       {
         "name": "Stinkwort Weeding Party at Byrne Preserve",
