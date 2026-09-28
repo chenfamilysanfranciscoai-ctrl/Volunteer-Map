@@ -182,6 +182,28 @@
         "lng": -122.4995,
         "location": "Sharp Park Beach, Pacifica, CA 94044, USA",
         "bookingUrl": "https://forms.gle/DPXZuNBgAG9Xffyx7"
+      },
+      {
+        "name": "Esplanade Beach Cleanup",
+        "date": "2026-11-21",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
+        "lat": 37.598,
+        "lng": -122.4995,
+        "location": "Esplanade Avenue, Esplanade Ave, Pacifica, CA 94044, USA",
+        "bookingUrl": "https://forms.gle/w1sjw7buzUmxkAJD6"
+      },
+      {
+        "name": "Pacifica State Beach Cleanup",
+        "date": "2026-11-21",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": "11:00 AM",
+        "lat": 37.6006,
+        "lng": -122.5001,
+        "location": "Pacifica State Beach, 1416 9th St, California 95814, United States",
+        "bookingUrl": "https://forms.gle/7a9NrKTB72X4EPAAA"
       }
     ]
   },
@@ -218,17 +240,6 @@
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/03/volunteer-outdoors-redwood-grove"
       },
       {
-        "name": "Compassion Week: Volunteer Outdoors at Foothills Nature Preserve",
-        "date": "2026-10-07",
-        "day": "Wednesday",
-        "start": "9:00 AM",
-        "end": null,
-        "lat": 37.3662,
-        "lng": -122.1743,
-        "location": "Foothills Nature Preserve, 3300 Page Mill Rd, Palo Alto, CA 94304",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/07/volunteer-outdoors-foothills-nature-preserve-compassion-week"
-      },
-      {
         "name": "Volunteer Outside at McClellan Ranch Preserve in Cupertino",
         "date": "2026-10-11",
         "day": "Sunday",
@@ -236,8 +247,85 @@
         "end": null,
         "lat": 37.3132,
         "lng": -122.0628,
-        "location": "McClellan Ranch Preserve, 22221 McClellan Road, Cupertino, CA 95014",
+        "location": "22221 McClellan Road, Cupertino, CA 95014",
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/11/volunteer-at-mcclellan-ranch-preserve-in-cupertino"
+      },
+      {
+        "name": "Volunteer Outdoors at Redwood Grove in Los Altos",
+        "date": "2026-10-16",
+        "day": "Friday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.3742,
+        "lng": -122.1185,
+        "location": "Redwood Grove Nature Preserve, 482 University Avenue, Los Altos, CA 94022",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/16/volunteer-outdoors-redwood-grove"
+      },
+      {
+        "name": "Volunteer Outdoors in Alviso at the Burrowing Owl Project (18+)",
+        "date": "2026-10-16",
+        "day": "Friday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.4231,
+        "lng": -121.9551,
+        "location": "150 Nortech Pkwy, San Jose, CA 95134",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/16/alviso-san-jose-burrowing-owl-project"
+      },
+      {
+        "name": "Volunteer Outdoors in MV Shoreline Marsh Habitat Restoration",
+        "date": "2026-10-17",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.4225,
+        "lng": -122.0856,
+        "location": "1600 Amphitheatre Parkway, Mountain View, CA 94043",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/17/volunteer-outdoors-in-mountain-view-shoreline"
+      },
+      {
+        "name": "Volunteer Outdoors in East Palo Alto at Ravenswood",
+        "date": "2026-10-24",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.4784,
+        "lng": -122.1997,
+        "location": "Ravenswood Open Space Preserve, 2100 Bay Road, East Palo Alto, CA 94303",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/24/volunteer-east-palo-alto-ravenswood"
+      },
+      {
+        "name": "CNPS Native Plant Sale at Hidden Villa",
+        "date": "2026-10-24",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.354,
+        "lng": -122.1563,
+        "location": "Hidden Villa, 26870 Moody Road, Los Altos Hills, CA 94022",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/24/cnps-native-plant-sale"
+      },
+      {
+        "name": "Volunteer Outdoors in Palo Alto at Pearson-Arastradero Preserve",
+        "date": "2026-10-24",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.3871,
+        "lng": -122.1738,
+        "location": "Pearson-Arastradero Preserve, 1530 Arastradero Road, Palo Alto, CA 94304",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/24/volunteer-at-pearson-arastradero-preserve"
+      },
+      {
+        "name": "Volunteer Outdoors in Menlo Park: Gardening for Pollinators at Alma Garden",
+        "date": "2026-10-31",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.4479,
+        "lng": -122.1709,
+        "location": "Alma Pollinator Garden, 1 Alma Street, Menlo Park, CA 94025",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/31/volunteer-menlo-park-pollinator-garden"
       }
     ]
   },
