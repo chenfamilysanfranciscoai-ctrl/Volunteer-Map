@@ -5,17 +5,6 @@
     "events": [
       {
         "name": "Ocean Beach Cleanup - Surfrider San Francisco",
-        "date": "2026-10-04",
-        "day": "Sunday",
-        "start": "10:00 AM",
-        "end": "12:00 PM",
-        "lat": 37.7562,
-        "lng": -122.5102,
-        "location": "Ocean Beach, San Francisco, CA, USA",
-        "bookingUrl": "https://x.gldn.io/e/9B5JZOXsA5b"
-      },
-      {
-        "name": "Ocean Beach Cleanup - Surfrider San Francisco",
         "date": "2026-11-01",
         "day": "Sunday",
         "start": "10:00 AM",
@@ -30,197 +19,33 @@
   {
     "org": "Pacific Beach Coalition",
     "color": "#d9642b",
-    "events": [
-      {
-        "name": "\ud83d\udce3 PBC General Meeting",
-        "date": "2026-10-01",
-        "day": "Thursday",
-        "start": "6:00 PM",
-        "end": "7:45 PM",
-        "lat": 37.6322,
-        "lng": -122.4919,
-        "location": "104 Hilton Way, Pacifica, CA 94044, USA"
-      },
-      {
-        "name": "San Pedro Creek Cleanup",
-        "date": "2026-10-03",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.5889,
-        "lng": -122.5002,
-        "location": "751 San Pedro Terrace Rd, Pacifica, CA 94044, USA",
-        "bookingUrl": "https://forms.gle/W7kpEMmBVYPkyNd8A"
-      },
-      {
-        "name": "Rockaway Beach Cleanup",
-        "date": "2026-10-03",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.6085,
-        "lng": -122.4953,
-        "location": "Rockaway Beach, Pacifica, CA 94044, USA",
-        "bookingUrl": "https://forms.gle/rAA3XkG5rhDKERMS9"
-      },
-      {
-        "name": "Montara Beach cleanup",
-        "date": "2026-10-10",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.5422,
-        "lng": -122.5161,
-        "location": "Montara Beach, Montara, CA 94019, USA",
-        "bookingUrl": "https://forms.gle/WXvL7C1cabkv1Mwa6"
-      },
-      {
-        "name": "Sharp Park Beach Cleanup",
-        "date": "2026-10-10",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.598,
-        "lng": -122.4995,
-        "location": "Sharp Park Beach, Pacifica, CA 94044, USA",
-        "bookingUrl": "https://forms.gle/DPXZuNBgAG9Xffyx7"
-      },
-      {
-        "name": "Thornton Vista Cleanup and Habitat Restoration",
-        "date": "2026-10-11",
-        "day": "Sunday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.6905,
-        "lng": -122.4727,
-        "location": "Thornton State Beach, Thornton Beach Rd, Daly City, CA 94015, USA",
-        "bookingUrl": "https://forms.gle/jef9Tpktjv45pH3o8"
-      },
-      {
-        "name": "Esplanade Beach Cleanup",
-        "date": "2026-10-17",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.598,
-        "lng": -122.4995,
-        "location": "Esplanade Avenue, Esplanade Ave, Pacifica, CA 94044, USA",
-        "bookingUrl": "https://forms.gle/w1sjw7buzUmxkAJD6"
-      },
-      {
-        "name": "Pacifica State Beach Cleanup",
-        "date": "2026-10-17",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.6006,
-        "lng": -122.5001,
-        "location": "Pacifica State Beach, 1416 9th St, California 95814, United States",
-        "bookingUrl": "https://forms.gle/7a9NrKTB72X4EPAAA"
-      },
-      {
-        "name": "\ud83d\udce3 PBC General Meeting",
-        "date": "2026-11-05",
-        "day": "Thursday",
-        "start": "6:00 PM",
-        "end": "7:45 PM",
-        "lat": 37.6322,
-        "lng": -122.4919,
-        "location": "104 Hilton Way, Pacifica, CA 94044, USA"
-      },
-      {
-        "name": "San Pedro Creek Cleanup",
-        "date": "2026-11-07",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.5889,
-        "lng": -122.5002,
-        "location": "751 San Pedro Terrace Rd, Pacifica, CA 94044, USA",
-        "bookingUrl": "https://forms.gle/W7kpEMmBVYPkyNd8A"
-      },
-      {
-        "name": "Rockaway Beach Cleanup",
-        "date": "2026-11-07",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.6085,
-        "lng": -122.4953,
-        "location": "Rockaway Beach, Pacifica, CA 94044, USA",
-        "bookingUrl": "https://forms.gle/rAA3XkG5rhDKERMS9"
-      },
-      {
-        "name": "Thornton Vista Cleanup and Habitat Restoration",
-        "date": "2026-11-08",
-        "day": "Sunday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.6905,
-        "lng": -122.4727,
-        "location": "Thornton State Beach, Thornton Beach Rd, Daly City, CA 94015, USA",
-        "bookingUrl": "https://forms.gle/jef9Tpktjv45pH3o8"
-      },
-      {
-        "name": "Montara Beach cleanup",
-        "date": "2026-11-14",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.5422,
-        "lng": -122.5161,
-        "location": "Montara Beach, Montara, CA 94019, USA",
-        "bookingUrl": "https://forms.gle/WXvL7C1cabkv1Mwa6"
-      },
-      {
-        "name": "Sharp Park Beach Cleanup",
-        "date": "2026-11-14",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.598,
-        "lng": -122.4995,
-        "location": "Sharp Park Beach, Pacifica, CA 94044, USA",
-        "bookingUrl": "https://forms.gle/DPXZuNBgAG9Xffyx7"
-      },
-      {
-        "name": "Esplanade Beach Cleanup",
-        "date": "2026-11-21",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.598,
-        "lng": -122.4995,
-        "location": "Esplanade Avenue, Esplanade Ave, Pacifica, CA 94044, USA",
-        "bookingUrl": "https://forms.gle/w1sjw7buzUmxkAJD6"
-      },
-      {
-        "name": "Pacifica State Beach Cleanup",
-        "date": "2026-11-21",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": "11:00 AM",
-        "lat": 37.6006,
-        "lng": -122.5001,
-        "location": "Pacifica State Beach, 1416 9th St, California 95814, United States",
-        "bookingUrl": "https://forms.gle/7a9NrKTB72X4EPAAA"
-      }
-    ]
+    "events": []
   },
   {
     "org": "Save The Bay",
     "color": "#3b6ea5",
     "events": [
       {
-        "name": "Habitat Restoration at Eden Landing (Hayward)",
-        "date": "2026-10-03",
+        "name": "Leadership in Storytelling Community Celebration Picnic (Lunch provided!)",
+        "date": "2026-10-10",
         "day": "Saturday",
+        "start": "10:00 AM",
+        "end": "1:00 PM",
+        "lat": 37.8045,
+        "lng": -122.2714,
+        "location": "Oakland",
+        "bookingUrl": "https://savesfbay.org/event/leadership-in-storytelling-community-celebration-picnic-lunch-provided-oakland-myrhyac/"
+      },
+      {
+        "name": "Third Thursdays at PAB Nursery",
+        "date": "2026-11-19",
+        "day": "Thursday",
         "start": "9:00 AM",
         "end": "12:00 PM",
-        "lat": 37.6155,
-        "lng": -122.1085,
-        "location": "Eden Landing Ecological Reserve, Hayward",
-        "bookingUrl": "https://savesfbay.org/event/habitat-restoration-at-eden-landing-hayward-1jxwyay/"
+        "lat": 37.4338,
+        "lng": -122.0998,
+        "location": "Palo Alto Baylands Preserve, near the Duck Trail Pond",
+        "bookingUrl": "https://savesfbay.org/event/third-thursdays-at-pab-nursery-sk0lyaw/"
       }
     ]
   },
@@ -229,15 +54,15 @@
     "color": "#8a6d1f",
     "events": [
       {
-        "name": "Volunteer Outdoors at Redwood Grove in Los Altos",
-        "date": "2026-10-03",
-        "day": "Saturday",
+        "name": "Compassion Week: Volunteer Outdoors at Foothills Nature Preserve",
+        "date": "2026-10-07",
+        "day": "Wednesday",
         "start": "9:00 AM",
         "end": null,
-        "lat": 37.3742,
-        "lng": -122.1185,
-        "location": "Redwood Grove Nature Preserve, 482 University Avenue, Los Altos, CA 94022",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/03/volunteer-outdoors-redwood-grove"
+        "lat": 37.3662,
+        "lng": -122.1743,
+        "location": "Foothills Nature Preserve, 3300 Page Mill Rd, Palo Alto, CA 94304",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/07/volunteer-outdoors-foothills-nature-preserve-compassion-week"
       },
       {
         "name": "Volunteer Outside at McClellan Ranch Preserve in Cupertino",
@@ -251,17 +76,6 @@
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/11/volunteer-at-mcclellan-ranch-preserve-in-cupertino"
       },
       {
-        "name": "Volunteer Outdoors at Redwood Grove in Los Altos",
-        "date": "2026-10-16",
-        "day": "Friday",
-        "start": "9:00 AM",
-        "end": null,
-        "lat": 37.3742,
-        "lng": -122.1185,
-        "location": "Redwood Grove Nature Preserve, 482 University Avenue, Los Altos, CA 94022",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/16/volunteer-outdoors-redwood-grove"
-      },
-      {
         "name": "Volunteer Outdoors in Alviso at the Burrowing Owl Project (18+)",
         "date": "2026-10-16",
         "day": "Friday",
@@ -271,6 +85,17 @@
         "lng": -121.9551,
         "location": "150 Nortech Pkwy, San Jose, CA 95134",
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/16/alviso-san-jose-burrowing-owl-project"
+      },
+      {
+        "name": "Volunteer Outdoors at Redwood Grove in Los Altos",
+        "date": "2026-10-16",
+        "day": "Friday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.3742,
+        "lng": -122.1185,
+        "location": "Redwood Grove Nature Preserve, 482 University Avenue, Los Altos, CA 94022",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/16/volunteer-outdoors-redwood-grove"
       },
       {
         "name": "Volunteer Outdoors in MV Shoreline Marsh Habitat Restoration",
@@ -295,6 +120,17 @@
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/24/volunteer-east-palo-alto-ravenswood"
       },
       {
+        "name": "Volunteer Outdoors at Pearson-Arastradero Preserve",
+        "date": "2026-10-24",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.3871,
+        "lng": -122.1738,
+        "location": "1530 Arastradero Road, Palo Alto, CA 94304",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/24/volunteer-at-pearson-arastradero-preserve"
+      },
+      {
         "name": "CNPS Native Plant Sale at Hidden Villa",
         "date": "2026-10-24",
         "day": "Saturday",
@@ -306,17 +142,6 @@
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/24/cnps-native-plant-sale"
       },
       {
-        "name": "Volunteer Outdoors in Palo Alto at Pearson-Arastradero Preserve",
-        "date": "2026-10-24",
-        "day": "Saturday",
-        "start": "9:00 AM",
-        "end": null,
-        "lat": 37.3871,
-        "lng": -122.1738,
-        "location": "Pearson-Arastradero Preserve, 1530 Arastradero Road, Palo Alto, CA 94304",
-        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/24/volunteer-at-pearson-arastradero-preserve"
-      },
-      {
         "name": "Volunteer Outdoors in Menlo Park: Gardening for Pollinators at Alma Garden",
         "date": "2026-10-31",
         "day": "Saturday",
@@ -326,6 +151,17 @@
         "lng": -122.1709,
         "location": "Alma Pollinator Garden, 1 Alma Street, Menlo Park, CA 94025",
         "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/31/volunteer-menlo-park-pollinator-garden"
+      },
+      {
+        "name": "Volunteer Outdoors in Redwood City: Habitat Restoration at Redwood Creek",
+        "date": "2026-10-31",
+        "day": "Saturday",
+        "start": "9:00 AM",
+        "end": null,
+        "lat": 37.4915,
+        "lng": -122.2274,
+        "location": "353 Main Street, Redwood City, CA 94063",
+        "bookingUrl": "https://www.grassrootsecology.org/event-calendar/2026/10/31/volunteer-at-redwood-creek"
       }
     ]
   },
