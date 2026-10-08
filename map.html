@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Map — Local Environmental Volunteering</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --moss: #4a7856;
+  --moss-dark: #24402c;
+  --moss-light: #eef4ee;
+  --clay: #d9642b;
+  --clay-dark: #b8531f;
+  --ink: #1f2b23;
+  --paper: #fbfaf7;
+  --line: #e4e0d6;
+}
+*{ box-sizing: border-box; }
+html, body{
+  margin: 0;
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+/* Site header + nav is a flex column with the map filling whatever space
+   is left -- this is more robust than a hardcoded "100vh minus N pixels"
+   height, since the header can wrap to two lines on narrow screens now
+   that it also holds the tab navigation. */
+body{
+  display: flex;
+  flex-direction: column;
+}
+header{
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.brand{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-icon{
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--moss);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+header h1{
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--moss-dark);
+  letter-spacing: -0.01em;
+}
+header p{
+  margin: 0;
+  font-size: 0.78rem;
+  color: #8a8577;
+}
+
+/* ---- tab navigation (shared across every page on the site) ---- */
+nav.tabs{
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.tab-link{
+  text-decoration: none;
+  color: #6b6656;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tab-link:hover{
+  background: var(--moss-light);
+  color: var(--moss-dark);
+}
+.tab-link.active{
+  background: var(--moss);
+  color: white;
+}
+
+#map-wrap{
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+#map{
+  width: 100%;
+  height: 100%;
+  background: var(--moss-light);
+}
+
+/* ---- map pins ----
+   The basemap (tiles, pan, zoom, rotation) is rendered by MapLibre GL JS
+   -- a modern, open-source vector-tile renderer, which is why panning and
+   zooming feel smooth and the map itself looks sharp at any zoom level
+   instead of soft/pixelated raster tiles. Each pin below is a plain HTML
+   element handed to MapLibre's own Marker class, so MapLibre keeps it
+   positioned correctly through every pan/zoom/rotate automatically --
+   there's no manual position-recalculation code needed at all.
+
+   IMPORTANT: MapLibre positions a marker by writing its own inline
+   `transform` (translate) directly onto the element you hand it, which
+   silently overrides any CSS `transform` rule targeting that same
+   element (inline styles always win over stylesheet rules). So the
+   outer ".pin-anchor" element -- the one actually passed to
+   `new maplibregl.Marker({ element: ... })` -- must never have a
+   `transform` of its own. All of the pin's own visual styling
+   (including the hover scale-up) lives on the nested ".pin" child
+   instead, where it can't collide with MapLibre's positioning. */
+.pin-anchor{
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+.pin{
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid white;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.28);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.pin span{
+  font-size: 14px;
+  pointer-events: none;
+}
+.pin.is-hovered{
+  box-shadow: 0 6px 14px rgba(0,0,0,0.38);
+  transform: scale(1.15);
+}
+
+/* MapLibre's own popup, reskinned to match this site's card style instead
+   of the library default (removing its default background/tip so ours,
+   below, take over). */
+.maplibregl-popup{
+  max-width: 260px !important;
+}
+.maplibregl-popup-content{
+  background: var(--paper);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(20,30,20,0.22);
+  padding: 14px 16px;
+  width: 240px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{
+  border-top-color: var(--paper);
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip{
+  border-bottom-color: var(--paper);
+}
+.maplibregl-popup-close-button{
+  color: #8a8577;
+  font-size: 18px;
+  padding: 4px 8px;
+}
+.popup-org{
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--clay-dark);
+  margin: 0 18px 5px 0;
+}
+.popup-title{
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--moss-dark);
+  margin: 0 0 10px 0;
+  line-height: 1.25;
+}
+.popup-row{
+  font-size: 0.82rem;
+  color: #4b463c;
+  margin: 4px 0;
+  display: flex;
+  gap: 8px;
+}
+.popup-row b{
+  color: var(--moss-dark);
+  min-width: 40px;
+  font-weight: 600;
+}
+.help-btn{
+  display: block;
+  text-align: center;
+  margin-top: 12px;
+  background: var(--clay);
+  color: white;
+  border: none;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.help-btn:hover{
+  background: var(--clay-dark);
+  transform: translateY(-1px);
+}
+.help-btn.disabled{
+  background: #cfc9ba;
+  color: #6b6656;
+  cursor: not-allowed;
+}
+.help-btn.disabled:hover{
+  background: #cfc9ba;
+  transform: none;
+}
+
+.legend{
+  position: absolute;
+  bottom: 22px;
+  left: 16px;
+  z-index: 5;
+  background: rgba(251,250,247,0.94);
+  backdrop-filter: blur(6px);
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(20,30,20,0.15);
+  font-size: 0.8rem;
+  border: 1px solid var(--line);
+}
+.legend-title{
+  font-weight: 700;
+  color: var(--moss-dark);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.legend div.row{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  color: #4b463c;
+}
+.dot{
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 2px white, 0 1px 4px rgba(0,0,0,0.25);
+}
+
+.stat-box{
+  position: absolute;
+  top: 18px;
+  right: 16px;
+  z-index: 5;
+  background: var(--moss-dark);
+  color: var(--paper);
+  padding: 12px 18px;
+  border-radius: 12px;
+  box-shadow: 0 8px 22px rgba(20,30,20,0.3);
+  font-size: 0.8rem;
+  text-align: center;
+  min-width: 160px;
+}
+.stat-box .label{
+  opacity: 0.75;
+  font-size: 0.72rem;
+}
+.stat-box .big{
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #ffcb8e;
+  line-height: 1.2;
+}
+
+.maplibregl-ctrl-top-right{
+  top: 90px !important;
+}
+.maplibregl-ctrl-group{
+  border-radius: 8px !important;
+  box-shadow: 0 6px 18px rgba(20,30,20,0.18) !important;
+  overflow: hidden;
+}
+</style>
+</head>
+<body>
+
+<header>
+<div class="brand">
+<div class="brand-icon">🌿</div>
+<div>
+<h1>Local Environmental Volunteering — Bay Area</h1>
+<p>Tap a pin to see the opportunity and sign up</p>
+</div>
+</div>
+<nav class="tabs">
+<a href="index.html" class="tab-link">Home</a>
+<a href="map.html" class="tab-link active">Map</a>
+<a href="dashboard.html" class="tab-link">Dashboard</a>
+<a href="get-involved.html" class="tab-link">Get Involved</a>
+<a href="resources.html" class="tab-link">Resources</a>
+<a href="about.html" class="tab-link">About</a>
+</nav>
+</header>
+
+<div id="map-wrap">
+<div id="map"></div>
+<div class="legend" id="legend"></div>
+<div class="stat-box">
+<div class="label">People who clicked "I will help!"</div>
+<div class="big" id="bookingCount">–</div>
+</div>
+</div>
+
+<script>
+// ---- TEMPORARY: mock-data toggle for aesthetics-only iteration ----
+// While we're just working on how the map LOOKS, set this to true to skip
+// the events.json fetch entirely and use the placeholder data below
+// instead -- so we're never touching (or depending on) the real event
+// data while iterating on style. Same 5 real orgs/colors so the aesthetic
+// proportions stay realistic; placeholder titles/locations and "#" links
+// so nothing sends a real visitor anywhere during testing.
+//
+// >>> Once the look is finalized, set this back to false and nothing else
+// needs to change -- loadOrgData() below goes right back to fetching the
+// real events.json. <<<
+const USE_MOCK_DATA = true;
+
+const MOCK_DATA = [
+  {
+    org: "Surfrider Foundation SF",
+    color: "#2f7fb8",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Beach Cleanup", date: "2026-10-04", day: "Sunday", start: "10:00 AM", end: "12:00 PM", location: "Ocean Beach, San Francisco", lat: 37.7594, lng: -122.5107, bookingUrl: "#" },
+      { name: "Sample Storm Drain Stenciling", date: "2026-10-18", day: "Sunday", start: "9:00 AM", end: "11:00 AM", location: "Sunset District, San Francisco", lat: 37.7620, lng: -122.4870, bookingUrl: "#" }
+    ]
+  },
+  {
+    org: "Pacific Beach Coalition",
+    color: "#3f9142",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Shoreline Cleanup", date: "2026-10-11", day: "Sunday", start: "9:00 AM", end: "11:00 AM", location: "Linda Mar Beach, Pacifica", lat: 37.5983, lng: -122.5011, bookingUrl: "#" },
+      { name: "Sample Dune Restoration", date: "2026-11-08", day: "Sunday", start: "9:00 AM", end: "12:00 PM", location: "Sharp Park, Pacifica", lat: 37.6280, lng: -122.4930, bookingUrl: "#" }
+    ]
+  },
+  {
+    org: "Save The Bay",
+    color: "#c98a1f",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Marsh Restoration", date: "2026-10-18", day: "Sunday", start: "9:30 AM", end: "12:30 PM", location: "Eden Landing Ecological Reserve, Hayward", lat: 37.6069, lng: -122.1136, bookingUrl: "#" },
+      { name: "Sample Wetland Planting", date: "2026-11-15", day: "Sunday", start: "9:00 AM", end: "12:00 PM", location: "Ravenswood Preserve, Menlo Park", lat: 37.4750, lng: -122.2020, bookingUrl: "#" }
+    ]
+  },
+  {
+    org: "Grassroots Ecology",
+    color: "#7a4fae",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Native Plant Restoration", date: "2026-10-25", day: "Sunday", start: "9:00 AM", end: "12:00 PM", location: "Arastradero Preserve, Palo Alto", lat: 37.3781, lng: -122.1697, bookingUrl: "#" },
+      { name: "Sample Invasive Removal", date: "2026-11-22", day: "Sunday", start: "9:00 AM", end: "11:30 AM", location: "Foothills Park, Palo Alto", lat: 37.3640, lng: -122.1610, bookingUrl: "#" }
+    ]
+  },
+  {
+    org: "San Francisco Baykeeper",
+    color: "#d9642b",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Bay Shoreline Cleanup", date: "2026-11-01", day: "Sunday", start: "10:00 AM", location: "Heron's Head Park, San Francisco", lat: 37.7407, lng: -122.3773, bookingUrl: "#" },
+      { name: "Sample Water Quality Monitoring", date: "2026-11-08", day: "Sunday", start: "8:30 AM", end: "10:30 AM", location: "Candlestick Point, San Francisco", lat: 37.7180, lng: -122.3700, bookingUrl: "#" }
+    ]
+  }
+];
+
+// ---- event data normally lives in events.json, loaded at runtime ----
+// This is the file Cowork should overwrite each month -- nothing in this
+// <script> block needs to change for a routine data update.
+let orgData = [];
+
+async function loadOrgData(){
+  if (USE_MOCK_DATA) {
+    orgData = MOCK_DATA;
+    return;
+  }
+  try {
+    // Bust both the browser cache and GitHub Pages' CDN cache with a
+    // per-load timestamp, and also tell fetch() itself not to use any
+    // cached copy -- without this, a visitor (or the site owner testing it
+    // right after a data update) can keep seeing an old events.json long
+    // after a newer one has been pushed, which looks exactly like "wrong
+    // dates" or "the wrong event" even though the source data is correct.
+    const res = await fetch('events.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('events.json request failed: ' + res.status);
+    orgData = await res.json();
+  } catch (err) {
+    console.error('Could not load events.json', err);
+    document.getElementById('map-wrap').insertAdjacentHTML(
+      'beforeend',
+      '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);' +
+      'background:#fbfaf7;border:1px solid #e4e0d6;padding:14px 20px;border-radius:10px;' +
+      'font-family:Inter,system-ui,sans-serif;font-size:0.85rem;color:#1f2b23;z-index:1000;">' +
+      'Couldn\'t load event data (events.json). If you opened this file directly, serve it ' +
+      'over a local web server instead of file:// so the fetch works.</div>'
+    );
+  }
+}
+
+// ---- map setup ----
+// MapLibre GL JS (an open-source, actively-maintained vector-tile renderer
+// -- the same underlying technology as Mapbox/Google Maps' smooth "app-
+// like" pan and zoom) replaces the earlier Leaflet+D3 combination.
+// Rendering vector tiles instead of flat raster images is what makes the
+// zoom/pan feel noticeably smoother and the map look sharp at any zoom
+// level, on any screen. "liberty" is a free, no-API-key-required basemap
+// style from OpenFreeMap with a fuller, more standard map color palette
+// (green parks, blue water, warm road tones) -- swapped in for the
+// earlier near-grayscale "positron" style per the "add some color"
+// feedback. Other OpenFreeMap styles ("positron", "bright") are one-word
+// swaps here if we want to try a different look later.
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://tiles.openfreemap.org/styles/liberty',
+  center: [-122.47, 37.63], // MapLibre takes [lng, lat] -- the opposite order from Leaflet
+  zoom: 10,
+  attributionControl: { compact: true }
+});
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+function formatDate(iso){
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Minimal HTML-attribute escaping for values we interpolate into href/title
+// attributes -- everything here comes from our own events.json (itself
+// produced from verify_url()-checked links), but this costs nothing and
+// means a stray quote or angle bracket in a title/URL can never break the
+// markup or open an injection path.
+function escapeAttr(str){
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// ---- shared, persistent booking counter ----
+async function loadBookingCount(){
+  try{
+    const result = await window.storage.get('total_bookings', true);
+    const value = result ? parseInt(result.value, 10) : 0;
+    animateCountTo(document.getElementById('bookingCount'), value);
+  } catch(e){
+    document.getElementById('bookingCount').textContent = "0";
+  }
+}
+
+// Small "count up" animation for the stat box, instead of the number just
+// appearing -- purely cosmetic, never affects the real stored count.
+function animateCountTo(el, target){
+  if (!target){ el.textContent = "0"; return; }
+  const duration = 600;
+  const start = performance.now();
+  function tick(now){
+    const t = Math.min(1, (now - start) / duration);
+    el.textContent = Math.round(t * target);
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+async function recordBooking(eventName){
+  try{
+    let current = 0;
+    try{
+      const existing = await window.storage.get('total_bookings', true);
+      current = existing ? parseInt(existing.value, 10) : 0;
+    } catch(e){ current = 0; }
+    const updated = current + 1;
+    await window.storage.set('total_bookings', String(updated), true);
+    document.getElementById('bookingCount').textContent = updated;
+
+    const key = 'event_clicks:' + eventName.replace(/\s+/g, '_').toLowerCase();
+    let eventCount = 0;
+    try{
+      const existingEvent = await window.storage.get(key, true);
+      eventCount = existingEvent ? parseInt(existingEvent.value, 10) : 0;
+    } catch(e){ eventCount = 0; }
+    await window.storage.set(key, String(eventCount + 1), true);
+  } catch(e){
+    console.error('Booking storage error:', e);
+  }
+}
+
+function popupContentHtml(d){
+  const timeStr = d.end ? `${d.start} - ${d.end}` : d.start;
+
+  // The whole point of this map is that each pin sends a volunteer to a
+  // REAL sign-up page. Prefer this event's own bookingUrl; if this org
+  // only has a general page (no event-specific link was found), fall
+  // back to its orgUrl. Only if neither exists do we show a disabled
+  // button rather than a dead "#" link that silently goes nowhere.
+  const signupUrl = d.bookingUrl || d.orgUrl || null;
+  const helpButtonHtml = signupUrl
+    ? `<a class="help-btn" href="${escapeAttr(signupUrl)}" target="_blank" rel="noopener noreferrer" onclick="recordBooking('${d.name.replace(/'/g, "\\'")}')">I will help! →</a>`
+    : `<span class="help-btn disabled" title="No sign-up link found yet for this event -- check the organization's site directly">Sign-up link coming soon</span>`;
+
+  return `
+    <p class="popup-org">${d.org}</p>
+    <p class="popup-title">${d.name}</p>
+    <div class="popup-row"><b>Date</b> ${d.day}, ${formatDate(d.date)}</div>
+    <div class="popup-row"><b>Time</b> ${timeStr}</div>
+    <div class="popup-row"><b>Where</b> ${d.location}</div>
+    ${helpButtonHtml}
+  `;
+}
+
+// ---- one MapLibre Marker per event ----
+// Unlike the earlier D3 version, there's no manual pixel-position math or
+// zoom/pan event listeners here: MapLibre's own Marker class tracks the
+// map's projection internally and repositions its element automatically,
+// so this is genuinely simpler as well as smoother.
+function renderPins(){
+  orgData.forEach(orgGroup => {
+    orgGroup.events.forEach(ev => {
+      // anchorEl is what gets handed to maplibregl.Marker -- it must stay
+      // free of any CSS transform of ours (see the big comment on
+      // .pin-anchor above). The colored circle + hover scale-up live on
+      // the nested .pin child instead.
+      const anchorEl = document.createElement('div');
+      anchorEl.className = 'pin-anchor';
+      const pinEl = document.createElement('div');
+      pinEl.className = 'pin';
+      pinEl.style.background = orgGroup.color;
+      pinEl.innerHTML = '<span>🌱</span>';
+      anchorEl.appendChild(pinEl);
+      anchorEl.addEventListener('mouseenter', () => pinEl.classList.add('is-hovered'));
+      anchorEl.addEventListener('mouseleave', () => pinEl.classList.remove('is-hovered'));
+
+      const popup = new maplibregl.Popup({ offset: 20, closeButton: true, maxWidth: '260px' })
+        .setHTML(popupContentHtml(Object.assign({}, ev, { org: orgGroup.org, orgUrl: orgGroup.orgUrl })));
+
+      new maplibregl.Marker({ element: anchorEl, anchor: 'center' })
+        .setLngLat([ev.lng, ev.lat])
+        .setPopup(popup)
+        .addTo(map);
+    });
+  });
+}
+
+function renderLegend(){
+  const legend = document.getElementById('legend');
+  let html = '<div class="legend-title">Organizations</div>';
+  orgData.forEach(orgGroup => {
+    html += `<div class="row"><span class="dot" style="background:${orgGroup.color}"></span><span>${orgGroup.org}</span></div>`;
+  });
+  legend.innerHTML = html;
+}
+
+// The map's vector tiles/style and the events.json fetch load
+// independently and can finish in either order, so track both readiness
+// signals and only draw pins once BOTH are done -- attaching a single
+// map.on('load', ...) after awaiting the fetch would silently miss the
+// map's load event if it happened to fire first.
+let mapReady = false;
+map.on('load', () => { mapReady = true; tryRenderPins(); });
+
+function tryRenderPins(){
+  if (mapReady && orgData.length) {
+    renderPins();
+    renderLegend();
+  }
+}
+
+async function init(){
+  await loadOrgData();
+  tryRenderPins();
+  loadBookingCount();
+}
+
+init();
+</script>
+
+</body>
+</html>

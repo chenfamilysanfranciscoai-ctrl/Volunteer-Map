@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard — Local Environmental Volunteering</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --moss: #4a7856;
+  --moss-dark: #24402c;
+  --moss-light: #eef4ee;
+  --clay: #d9642b;
+  --clay-dark: #b8531f;
+  --ink: #1f2b23;
+  --paper: #fbfaf7;
+  --line: #e4e0d6;
+}
+*{ box-sizing: border-box; }
+html, body{
+  margin: 0;
+  min-height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+header{
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.brand{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-icon{
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--moss);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+header h1{
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--moss-dark);
+  letter-spacing: -0.01em;
+}
+header p{
+  margin: 0;
+  font-size: 0.78rem;
+  color: #8a8577;
+}
+
+/* ---- tab navigation (shared across every page on the site) ---- */
+nav.tabs{
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.tab-link{
+  text-decoration: none;
+  color: #6b6656;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tab-link:hover{
+  background: var(--moss-light);
+  color: var(--moss-dark);
+}
+.tab-link.active{
+  background: var(--moss);
+  color: white;
+}
+
+/* ---- dashboard ---- */
+.dash-wrap{
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+}
+.dash-intro h2{
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--moss-dark);
+  letter-spacing: -0.01em;
+}
+.dash-intro p{
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  color: #6b6656;
+  line-height: 1.5;
+}
+
+.date-heading{
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--moss-dark);
+  margin: 30px 0 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+}
+.date-heading:first-of-type{
+  margin-top: 26px;
+}
+
+/* Each event is its own clickable "button" -- a translucent tint of the
+   organization's own color (so five different orgs read as five different
+   colors at a glance, exactly like the map's pins and legend) with a solid
+   color bar on the left for a quick-scan accent. */
+.event-btn{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border-left: 4px solid transparent;
+  text-decoration: none;
+  color: var(--ink);
+  margin-bottom: 10px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  cursor: pointer;
+}
+.event-btn:hover{
+  transform: translateX(4px);
+  box-shadow: 0 6px 16px rgba(20,30,20,0.12);
+}
+.event-btn.disabled{
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.event-btn.disabled:hover{
+  transform: none;
+  box-shadow: none;
+}
+.event-left{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.event-org{
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.event-name{
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--moss-dark);
+}
+.event-loc{
+  font-size: 0.8rem;
+  color: #6b6656;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.event-right{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.event-time{
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4b463c;
+  white-space: nowrap;
+}
+.event-cta{
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--clay-dark);
+  white-space: nowrap;
+}
+.event-btn.disabled .event-cta{
+  color: #8a8577;
+}
+
+.empty-note{
+  font-size: 0.9rem;
+  color: #6b6656;
+  padding: 24px 0;
+}
+
+@media (max-width: 560px){
+  .event-btn{ flex-direction: column; align-items: flex-start; gap: 8px; }
+  .event-right{ align-items: flex-start; text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<header>
+<div class="brand">
+<div class="brand-icon">🌿</div>
+<div>
+<h1>Local Environmental Volunteering — Bay Area</h1>
+<p>Find a way to help, near you</p>
+</div>
+</div>
+<nav class="tabs">
+<a href="index.html" class="tab-link">Home</a>
+<a href="map.html" class="tab-link">Map</a>
+<a href="dashboard.html" class="tab-link active">Dashboard</a>
+<a href="get-involved.html" class="tab-link">Get Involved</a>
+<a href="resources.html" class="tab-link">Resources</a>
+<a href="about.html" class="tab-link">About</a>
+</nav>
+</header>
+
+<div class="dash-wrap">
+<div class="dash-intro">
+<h2>Upcoming Opportunities</h2>
+<p>Every listed event, soonest first, grouped by date.</p>
+</div>
+<div id="eventList"></div>
+</div>
+
+<script>
+// ---- TEMPORARY: mock-data toggle for aesthetics-only iteration ----
+// Kept in sync with map.html's own copy of this same toggle + data while
+// we're just working on how things LOOK -- both files need to be flipped
+// back to false together once we're done (see the note on map.html).
+const USE_MOCK_DATA = true;
+
+const MOCK_DATA = [
+  {
+    org: "Surfrider Foundation SF",
+    color: "#2f7fb8",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Beach Cleanup", date: "2026-10-04", day: "Sunday", start: "10:00 AM", end: "12:00 PM", location: "Ocean Beach, San Francisco", lat: 37.7594, lng: -122.5107, bookingUrl: "#" },
+      { name: "Sample Storm Drain Stenciling", date: "2026-10-18", day: "Sunday", start: "9:00 AM", end: "11:00 AM", location: "Sunset District, San Francisco", lat: 37.7620, lng: -122.4870, bookingUrl: "#" }
+    ]
+  },
+  {
+    org: "Pacific Beach Coalition",
+    color: "#3f9142",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Shoreline Cleanup", date: "2026-10-11", day: "Sunday", start: "9:00 AM", end: "11:00 AM", location: "Linda Mar Beach, Pacifica", lat: 37.5983, lng: -122.5011, bookingUrl: "#" },
+      { name: "Sample Dune Restoration", date: "2026-11-08", day: "Sunday", start: "9:00 AM", end: "12:00 PM", location: "Sharp Park, Pacifica", lat: 37.6280, lng: -122.4930, bookingUrl: "#" }
+    ]
+  },
+  {
+    org: "Save The Bay",
+    color: "#c98a1f",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Marsh Restoration", date: "2026-10-18", day: "Sunday", start: "9:30 AM", end: "12:30 PM", location: "Eden Landing Ecological Reserve, Hayward", lat: 37.6069, lng: -122.1136, bookingUrl: "#" },
+      { name: "Sample Wetland Planting", date: "2026-11-15", day: "Sunday", start: "9:00 AM", end: "12:00 PM", location: "Ravenswood Preserve, Menlo Park", lat: 37.4750, lng: -122.2020, bookingUrl: "#" }
+    ]
+  },
+  {
+    org: "Grassroots Ecology",
+    color: "#7a4fae",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Native Plant Restoration", date: "2026-10-25", day: "Sunday", start: "9:00 AM", end: "12:00 PM", location: "Arastradero Preserve, Palo Alto", lat: 37.3781, lng: -122.1697, bookingUrl: "#" },
+      { name: "Sample Invasive Removal", date: "2026-11-22", day: "Sunday", start: "9:00 AM", end: "11:30 AM", location: "Foothills Park, Palo Alto", lat: 37.3640, lng: -122.1610, bookingUrl: "#" }
+    ]
+  },
+  {
+    org: "San Francisco Baykeeper",
+    color: "#d9642b",
+    orgUrl: "#",
+    events: [
+      { name: "Sample Bay Shoreline Cleanup", date: "2026-11-01", day: "Sunday", start: "10:00 AM", location: "Heron's Head Park, San Francisco", lat: 37.7407, lng: -122.3773, bookingUrl: "#" },
+      { name: "Sample Water Quality Monitoring", date: "2026-11-08", day: "Sunday", start: "8:30 AM", end: "10:30 AM", location: "Candlestick Point, San Francisco", lat: 37.7180, lng: -122.3700, bookingUrl: "#" }
+    ]
+  }
+];
+
+let orgData = [];
+
+async function loadOrgData(){
+  if (USE_MOCK_DATA) {
+    orgData = MOCK_DATA;
+    return;
+  }
+  try {
+    const res = await fetch('events.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('events.json request failed: ' + res.status);
+    orgData = await res.json();
+  } catch (err) {
+    console.error('Could not load events.json', err);
+    document.getElementById('eventList').innerHTML =
+      '<p class="empty-note">Couldn\'t load event data (events.json). If you opened this file directly, serve it over a local web server instead of file:// so the fetch works.</p>';
+  }
+}
+
+function formatDate(iso){
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function hexToRgba(hex, alpha){
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// Rough "H:MM AM/PM" -> minutes-since-midnight parser, just for sorting
+// events within the same date -- not used anywhere data actually gets
+// displayed, so it only needs to be good enough to order a day's events.
+function parseTimeToMinutes(t){
+  if (!t) return 0;
+  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return 0;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3].toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
+}
+
+function flattenAndSort(){
+  const flat = [];
+  orgData.forEach(orgGroup => {
+    orgGroup.events.forEach(ev => {
+      flat.push(Object.assign({}, ev, { org: orgGroup.org, color: orgGroup.color, orgUrl: orgGroup.orgUrl }));
+    });
+  });
+  flat.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return parseTimeToMinutes(a.start) - parseTimeToMinutes(b.start);
+  });
+  return flat;
+}
+
+// Chronological list, sectioned off by date -- a new heading starts
+// whenever the date changes, so events sharing a date sit together under
+// one heading instead of repeating it.
+function groupByDate(sortedEvents){
+  const groups = [];
+  let current = null;
+  sortedEvents.forEach(ev => {
+    if (!current || current.date !== ev.date) {
+      current = { date: ev.date, day: ev.day, events: [] };
+      groups.push(current);
+    }
+    current.events.push(ev);
+  });
+  return groups;
+}
+
+function renderDashboard(){
+  const groups = groupByDate(flattenAndSort());
+  const container = document.getElementById('eventList');
+  container.innerHTML = '';
+
+  if (!groups.length) {
+    container.innerHTML = '<p class="empty-note">No upcoming events right now -- check back soon.</p>';
+    return;
+  }
+
+  groups.forEach(group => {
+    const heading = document.createElement('div');
+    heading.className = 'date-heading';
+    heading.textContent = `${group.day}, ${formatDate(group.date)}`;
+    container.appendChild(heading);
+
+    group.events.forEach(ev => {
+      const signupUrl = ev.bookingUrl || ev.orgUrl || null;
+      const el = document.createElement(signupUrl ? 'a' : 'div');
+      el.className = 'event-btn' + (signupUrl ? '' : ' disabled');
+      if (signupUrl) {
+        el.href = signupUrl;
+        el.target = '_blank';
+        el.rel = 'noopener noreferrer';
+      } else {
+        el.title = "No sign-up link found yet for this event -- check the organization's site directly";
+      }
+      el.style.background = hexToRgba(ev.color, 0.14);
+      el.style.borderLeftColor = ev.color;
+
+      const timeStr = ev.end ? `${ev.start} – ${ev.end}` : ev.start;
+
+      const left = document.createElement('div');
+      left.className = 'event-left';
+      left.innerHTML = `
+        <span class="event-org" style="color:${ev.color}">${ev.org}</span>
+        <span class="event-name">${ev.name}</span>
+        <span class="event-loc">${ev.location}</span>
+      `;
+
+      const right = document.createElement('div');
+      right.className = 'event-right';
+      right.innerHTML = `
+        <span class="event-time">${timeStr}</span>
+        <span class="event-cta">${signupUrl ? 'I will help →' : 'Link coming soon'}</span>
+      `;
+
+      el.appendChild(left);
+      el.appendChild(right);
+      container.appendChild(el);
+    });
+  });
+}
+
+async function init(){
+  await loadOrgData();
+  if (orgData.length) renderDashboard();
+}
+
+init();
+</script>
+
+</body>
+</html>
